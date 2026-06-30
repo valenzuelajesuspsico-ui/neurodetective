@@ -92,6 +92,30 @@ const CLASSIFY_ACTIVITY = {
   ],
 };
 
+// Actividad 4: viñetas contrastadas — mismo diagnóstico DSM, distinto perfil RDoC.
+// (Basado en el ejemplo de Trastorno de Conducta de Cozza et al., "RDoC and Clinical Child Psychology".)
+const CONTRAST_VIGNETTES = {
+  dx: "Trastorno de Conducta (mismo diagnóstico DSM-5)",
+  patients: [
+    { label: "Paciente 1", text: "16 años, con ansiedad entre sus familiares. Robó presionado por sus amigos, falta a clases 'porque ellos faltan', y pelea diciendo que lo provocaron." },
+    { label: "Paciente 2", text: "16 años, con negligencia severa en la infancia. Robó sin justificarlo, no considera importante asistir a clases, e inicia peleas sin ofrecer ningún motivo." },
+  ],
+  questions: [
+    { key: "same", prompt: "Cumplen los mismos criterios DSM. ¿Comparten el mismo perfil RDoC?", options: [
+        { text: "No — el mecanismo subyacente es distinto en cada uno", correct: true, fb: "Correcto. Misma conducta observable, pero distinto mecanismo: ahí está el valor de RDoC, que mira por debajo del síntoma." },
+        { text: "Sí — si cumplen los mismos criterios, el perfil es el mismo", correct: false, fb: "No: compartir criterios DSM no implica el mismo mecanismo. Dos personas con la misma etiqueta pueden diferir por completo a nivel RDoC." },
+      ] },
+    { key: "p1", prompt: "¿Qué predomina en el Paciente 1?", options: [
+        { text: "Amenaza aguda hiper-reactiva (Valencia Negativa)", correct: true, fb: "Su conducta es reactiva y defensiva ('me provocaron'), con ansiedad en la familia: un sistema de amenaza hiperactivo." },
+        { text: "Miedo hipo-reactivo / rasgos insensibles", correct: false, fb: "Ese es el perfil del Paciente 2; el 1 reacciona con ansiedad, no con insensibilidad." },
+      ] },
+    { key: "p2", prompt: "¿Qué predomina en el Paciente 2?", options: [
+        { text: "Miedo hipo-reactivo / rasgos insensibles (tras negligencia)", correct: true, fb: "Inicia la agresión sin justificación ni remordimiento: un sistema de amenaza hipoactivo, perfil insensible." },
+        { text: "Amenaza aguda hiper-reactiva", correct: false, fb: "Ese es el perfil del Paciente 1; el 2 actúa sin miedo ni justificación." },
+      ] },
+  ],
+};
+
 // Actividad 3: tarjetas de repaso (constructo / término ↔ definición).
 const FLASHCARDS = [
   { front: "Miedo agudo", back: "Respuesta a una amenaza presente y concreta (Valencia Negativa)." },
@@ -2536,6 +2560,7 @@ export default function NeuroDetectiveRDoC() {
   const [diffDrillAns, setDiffDrillAns] = useState({});   // idx -> "a" | "b"
   const [classifyAns, setClassifyAns] = useState({});     // stepKey -> optionIndex
   const [flippedCards, setFlippedCards] = useState(new Set());
+  const [contrastAns, setContrastAns] = useState({});     // question.key -> optionIndex
   const [checkAns, setCheckAns] = useState({});           // question.key -> optionIndex
   const [checkSubmitted, setCheckSubmitted] = useState(false);
 
@@ -2927,7 +2952,7 @@ export default function NeuroDetectiveRDoC() {
               Repaso breve de los 6 dominios y las 8 unidades de análisis, con un mini-examen de emparejar al final.
             </p>
             <button
-              onClick={() => { setCourseStep(0); setDiffDrillAns({}); setClassifyAns({}); setFlippedCards(new Set()); resetReadinessCheck(); setScreen("course"); }}
+              onClick={() => { setCourseStep(0); setDiffDrillAns({}); setClassifyAns({}); setFlippedCards(new Set()); setContrastAns({}); resetReadinessCheck(); setScreen("course"); }}
               className="mt-3 w-full bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/40 active:scale-[0.98] transition-all text-purple-200 font-bold py-2.5 rounded-xl flex items-center justify-center gap-2 text-sm"
             >
               Empezar curso <ChevronRight className="w-4 h-4" />
@@ -3103,9 +3128,17 @@ export default function NeuroDetectiveRDoC() {
       {
         title: "¿Qué es RDoC?",
         content: (
-          <p className="text-slate-300 leading-relaxed">
-            El <span className="text-cyan-400">Research Domain Criteria (RDoC)</span> es un marco creado por el NIMH para estudiar el funcionamiento psicológico de forma <span className="text-cyan-400">dimensional y transdiagnóstica</span> — a través de todo el espectro, desde lo normal hasta lo patológico. A diferencia del DSM (que clasifica por categorías de trastornos), RDoC pregunta: <span className="italic">¿qué dominio funcional está alterado, y en qué nivel biológico se puede medir?</span>
-          </p>
+          <div>
+            <p className="text-slate-300 leading-relaxed mb-3">
+              El <span className="text-cyan-400">Research Domain Criteria (RDoC)</span> es un marco creado por el NIMH para estudiar el funcionamiento psicológico de forma <span className="text-cyan-400">dimensional y transdiagnóstica</span> — a través de todo el espectro, desde lo normal hasta lo patológico. A diferencia del DSM (que clasifica por categorías de trastornos), RDoC pregunta: <span className="italic">¿qué dominio funcional está alterado, y en qué nivel biológico se puede medir?</span>
+            </p>
+            <p className="text-slate-300 leading-relaxed mb-3">
+              La idea clave es que cada función es un <span className="text-cyan-300">continuo</span>: no "está presente o ausente", sino que va de <span className="text-cyan-300">hipo‑</span> a <span className="text-cyan-300">hiper‑reactiva</span>. Por ejemplo, la respuesta de amenaza puede ir desde casi nula (insensibilidad) hasta exagerada (pánico).
+            </p>
+            <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg px-3 py-2">
+              <p className="text-amber-200/90 text-xs leading-relaxed">RDoC es un marco <span className="font-bold">de investigación</span>, no un sistema de diagnóstico: <span className="font-bold">complementa</span> al DSM, no lo reemplaza.</p>
+            </div>
+          </div>
         )
       },
       {
@@ -3144,6 +3177,27 @@ export default function NeuroDetectiveRDoC() {
             <p className="text-slate-300 leading-relaxed">
               Filas y columnas son independientes entre sí — esa es la idea central que vas a aplicar en cada caso.
             </p>
+          </div>
+        )
+      },
+      {
+        title: "La matriz no es plana: Neurodesarrollo y Ambiente",
+        content: (
+          <div>
+            <p className="text-slate-300 text-sm leading-relaxed mb-3">
+              RDoC ya no se limita a la cuadrícula. En su versión actual, cada celda se atraviesa por <span className="text-cyan-400">dos dimensiones transversales</span> que cambian cómo se expresa un mismo constructo:
+            </p>
+            <div className="space-y-2">
+              <div className="bg-slate-800/50 rounded-lg px-3 py-2.5">
+                <span className="text-emerald-300 font-bold text-sm">🌱 Neurodesarrollo</span>
+                <p className="text-slate-400 text-xs mt-1 leading-relaxed">El mismo constructo (p. ej. el control de impulsos) no significa lo mismo a los 4, 16 o 70 años. Hay que leerlo según la <span className="text-slate-200">trayectoria del desarrollo</span>.</p>
+              </div>
+              <div className="bg-slate-800/50 rounded-lg px-3 py-2.5">
+                <span className="text-sky-300 font-bold text-sm">🌍 Ambiente</span>
+                <p className="text-slate-400 text-xs mt-1 leading-relaxed">Los constructos <span className="text-slate-200">interactúan con el contexto</span> — estrés, crianza, cultura. Un mismo circuito responde distinto según el ambiente.</p>
+              </div>
+            </div>
+            <p className="text-slate-500 text-[11px] mt-3 italic">Fuente: Morris et al. (2022), revisión de los pilares de RDoC.</p>
           </div>
         )
       },
@@ -3287,6 +3341,57 @@ export default function NeuroDetectiveRDoC() {
                     {answered && (
                       <p className={`text-[11px] mt-1.5 leading-relaxed ${step.options[sel].correct ? "text-emerald-300" : "text-amber-300"}`}>
                         {step.options[sel].fb}
+                      </p>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )
+      },
+      {
+        title: "Práctica · Dos pacientes, ¿mismo perfil?",
+        content: (
+          <div>
+            <p className="text-slate-400 text-xs mb-3">Dos chicos con el <span className="text-cyan-300">mismo diagnóstico DSM</span>. Lee ambos y decide si comparten el mismo perfil RDoC.</p>
+            <div className="inline-block mb-3 text-[11px] font-bold text-purple-300 bg-purple-500/10 px-2.5 py-1 rounded-full">{CONTRAST_VIGNETTES.dx}</div>
+            <div className="grid grid-cols-2 gap-2 mb-4">
+              {CONTRAST_VIGNETTES.patients.map(pt => (
+                <div key={pt.label} className="bg-slate-800/50 rounded-lg px-3 py-2.5">
+                  <p className="text-cyan-200 font-bold text-xs mb-1">{pt.label}</p>
+                  <p className="text-slate-300 text-[11px] leading-relaxed">{pt.text}</p>
+                </div>
+              ))}
+            </div>
+            <div className="space-y-3">
+              {CONTRAST_VIGNETTES.questions.map(q => {
+                const sel = contrastAns[q.key];
+                const answered = sel != null;
+                return (
+                  <div key={q.key}>
+                    <p className="text-slate-200 text-xs font-semibold mb-1.5">{q.prompt}</p>
+                    <div className="space-y-1.5">
+                      {q.options.map((opt, oi) => {
+                        const isSel = sel === oi;
+                        let cls = "border-slate-700 bg-slate-800/60 text-slate-200 hover:bg-slate-800";
+                        if (answered) {
+                          if (opt.correct) cls = "border-emerald-500 bg-emerald-500/10 text-emerald-200";
+                          else if (isSel) cls = "border-red-500 bg-red-500/10 text-red-200";
+                          else cls = "border-slate-800 bg-slate-800/20 text-slate-500";
+                        }
+                        return (
+                          <button key={oi} disabled={answered}
+                            onClick={() => setContrastAns(prev => ({ ...prev, [q.key]: oi }))}
+                            className={`w-full text-left px-3 py-2 rounded-lg border text-[11px] transition-all ${cls}`}>
+                            {opt.text}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    {answered && (
+                      <p className={`text-[11px] mt-1.5 leading-relaxed ${q.options[sel].correct ? "text-emerald-300" : "text-amber-300"}`}>
+                        {q.options[sel].fb}
                       </p>
                     )}
                   </div>
@@ -3988,7 +4093,7 @@ export default function NeuroDetectiveRDoC() {
           <div className="flex gap-3">
             {tier?.action === "course" ? (
               <button
-                onClick={() => { setCourseStep(0); setDiffDrillAns({}); setClassifyAns({}); setFlippedCards(new Set()); resetReadinessCheck(); setScreen("course"); }}
+                onClick={() => { setCourseStep(0); setDiffDrillAns({}); setClassifyAns({}); setFlippedCards(new Set()); setContrastAns({}); resetReadinessCheck(); setScreen("course"); }}
                 className="flex-1 bg-purple-500 hover:bg-purple-400 active:scale-[0.98] transition-all text-slate-900 font-bold py-3 rounded-xl flex items-center justify-center gap-2"
               >
                 <GraduationCap className="w-4 h-4" /> Ir al curso introductorio
