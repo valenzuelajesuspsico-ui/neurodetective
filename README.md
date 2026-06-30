@@ -25,7 +25,14 @@ npm install      # instalar dependencias
 npm run dev      # servidor de desarrollo (http://localhost:5173)
 npm run build    # build de producción en dist/
 npm run preview  # previsualizar el build de producción
+
+npm run build:singlefile   # genera un único HTML autónomo en dist-singlefile/
 ```
+
+El comando `build:singlefile` empaqueta toda la app (JS + CSS) en un solo
+archivo `dist-singlefile/index.html` que se abre directamente en el navegador
+(doble clic, sin servidor ni conexión a internet) — útil para compartir o
+probar la aplicación rápidamente.
 
 ## Estructura
 
