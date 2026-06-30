@@ -39,6 +39,94 @@ const UNITS = [
   { key: "PAR", label: "Paradigmas" },
 ];
 
+// --- Contenido de referencia del curso (extraído de los 27 casos) ---
+// Constructos de cada dominio, tal como los preguntan los casos.
+const CONSTRUCTS_BY_DOMAIN = {
+  VN: ["Miedo agudo (amenaza presente)", "Amenaza potencial / ansiedad sostenida", "Pérdida"],
+  VP: ["Respuesta a la recompensa (capacidad de sentir placer)"],
+  COG: ["Atención", "Memoria declarativa", "Lenguaje", "Control cognitivo (inhibición)", "Velocidad de procesamiento"],
+  SOC: ["Percepción y comprensión del otro", "Teoría de la mente", "Comunicación social"],
+  AR: ["Activación (arousal)", "Ritmos circadianos / sueño-vigilia"],
+  SM: ["Agencia y control de la acción", "Praxias"],
+};
+
+// Diferenciaciones clave: los errores trampa de los casos de nivel avanzado.
+const KEY_DISTINCTIONS = [
+  { a: "Miedo agudo", b: "Ansiedad sostenida", rule: "El miedo responde a una amenaza presente y concreta; la ansiedad anticipa un peligro futuro e incierto." },
+  { a: "Activación (arousal)", b: "Cognición", rule: "El arousal es el nivel de conciencia; la cognición es qué haces con esa conciencia. Si fluctúa la conciencia, el problema es de arousal." },
+  { a: "Inhibición (Cognitivo)", b: "Sensoriomotor", rule: "Una conducta repetitiva (p. ej. TOC) que no se puede frenar es un fallo de control cognitivo, no del sistema motor que ejecuta el movimiento." },
+  { a: "Percibir", b: "Ejecutar", rule: "Sentir el tacto o la posición del cuerpo es percepción; mover el miembro es ejecución. Son unidades distintas del dominio sensoriomotor." },
+  { a: "Producir lenguaje", b: "Comprender lenguaje", rule: "Se puede comprender bien y aun así no lograr expresarse (la brecha está en la producción), y viceversa." },
+  { a: "Memoria", b: "Atención / función ejecutiva", rule: "Olvidar por no registrar ni organizarse es un fallo atencional-ejecutivo, no una incapacidad de consolidar recuerdos." },
+  { a: "Buscar el contacto (autismo)", b: "Evitarlo (ansiedad social)", rule: "El autismo busca el vínculo pero no capta las reglas implícitas; la ansiedad social evita el contacto por miedo al juicio." },
+];
+
+// Mapa de instrumentos: qué mide, a quién.
+const INSTRUMENTS = [
+  { name: "WISC-V", use: "Inteligencia · 6 a 16 años" },
+  { name: "WAIS-IV", use: "Inteligencia · adultos (el distractor clásico del WISC)" },
+  { name: "NEUROPSI At. y Memoria", use: "Perfil de atención y memoria" },
+  { name: "NEUROPSI Breve", use: "Tamizaje cognitivo rápido / seriado" },
+  { name: "BANFE-3", use: "Funciones ejecutivas (lóbulo frontal)" },
+  { name: "Escalas de Conners / CCI", use: "TDAH (niños y adultos)" },
+  { name: "SRS-2", use: "Autismo (respuesta social)" },
+  { name: "SHAPS", use: "Anhedonia" },
+  { name: "Test de Boston", use: "Diagnóstico de afasias" },
+  { name: "NPI (Inv. Neuropsiquiátrico)", use: "Síntomas conductuales, con informante" },
+  { name: "MNA", use: "Tamizaje nutricional" },
+  { name: "West Haven", use: "Estadificación de encefalopatía hepática" },
+];
+
+// Fichero de síndromes recurrentes (una línea por síndrome).
+const SYNDROME_FILE = [
+  { name: "Síndrome de Capgras", desc: "Reconoce el rostro pero no siente la familiaridad → cree que es un impostor (desconexión fusiforme-amígdala)." },
+  { name: "Prosopagnosia", desc: "Incapacidad de reconocer rostros familiares (no confundir con Capgras, donde sí los reconoce)." },
+  { name: "Síndrome de Anton", desc: "Ceguera cortical con negación del déficit (anosognosia visual)." },
+  { name: "Negligencia espacial", desc: "Ignora un hemicampo tras lesión parietal derecha." },
+  { name: "Amnesia anterógrada", desc: "No consolida nuevos recuerdos (lesión bilateral del hipocampo / temporal medial)." },
+  { name: "Síndrome de la mano ajena", desc: "Movimientos con propósito sin sensación de control (lesión callosa / área motora suplementaria)." },
+  { name: "Crisis de ausencia", desc: "Desconexiones súbitas de segundos con fijación de la mirada (epilepsia)." },
+  { name: "TOC", desc: "Conductas repetitivas no inhibibles (hiperactivación del circuito córtico-estriado-tálamo-cortical)." },
+  { name: "Encefalopatía de Hashimoto", desc: "Confusión fluctuante con mioclonías y anticuerpos antitiroideos elevados (autoinmune)." },
+  { name: "T. Neurocognitivo vascular vs Alzheimer", desc: "Vascular: avanza 'en escalones', golpea velocidad/ejecutivo. Alzheimer: gradual, la memoria primero." },
+];
+
+// Mini-examen por capas: 3 rondas de emparejar. Se empareja por `id`.
+const EXAM_ROUNDS = [
+  {
+    chip: "Emparejar dominios",
+    instruction: "Toca un dominio y luego su descripción correcta.",
+    leftHeading: "Dominio",
+    pairs: DOMAINS.map(d => ({ id: d.key, left: d.label, right: DOMAIN_DESCRIPTIONS[d.key] })),
+  },
+  {
+    chip: "Constructo → Dominio",
+    instruction: "Toca un constructo y luego el dominio al que pertenece.",
+    leftHeading: "Constructo",
+    pairs: [
+      { id: "VN", left: "Miedo agudo / amenaza", right: "Valencia Negativa" },
+      { id: "VP", left: "Respuesta a la recompensa (anhedonia)", right: "Valencia Positiva" },
+      { id: "COG", left: "Control cognitivo (inhibición)", right: "Sistemas Cognitivos" },
+      { id: "SOC", left: "Teoría de la mente", right: "Procesos Sociales" },
+      { id: "AR", left: "Activación (arousal)", right: "Activación / Regulación" },
+      { id: "SM", left: "Agencia / control de la acción", right: "Sensoriomotores" },
+    ],
+  },
+  {
+    chip: "Instrumento → Uso",
+    instruction: "Toca un instrumento y luego para qué (o para quién) se usa.",
+    leftHeading: "Instrumento",
+    pairs: [
+      { id: "wisc", left: "WISC-V", right: "Inteligencia · 6 a 16 años" },
+      { id: "wais", left: "WAIS-IV", right: "Inteligencia · adultos" },
+      { id: "banfe", left: "BANFE-3", right: "Funciones ejecutivas" },
+      { id: "srs", left: "SRS-2", right: "Autismo (respuesta social)" },
+      { id: "shaps", left: "SHAPS", right: "Anhedonia" },
+      { id: "mna", left: "MNA", right: "Tamizaje nutricional" },
+    ],
+  },
+];
+
 const BASE_POINTS = { sindrome: 100, dominio: 100, constructo: 150, unidad: 150, instrumento: 100 };
 const QTYPE_LABEL = { sindrome: "Diagnóstico clínico", dominio: "Dominio RDoC", constructo: "Constructo RDoC", unidad: "Unidad de análisis", instrumento: "Instrumento de evaluación" };
 const LEVEL_LABEL = { 1: "Nivel 1 · Básico", 2: "Nivel 2 · Intermedio", 3: "Nivel 3 · Avanzado" };
@@ -2442,13 +2530,14 @@ export default function NeuroDetectiveRDoC() {
   const [studySelected, setStudySelected] = useState(null);
   const [studyShowFeedback, setStudyShowFeedback] = useState(false);
 
-  // --- estado curso RDoC + examen ---
+  // --- estado curso RDoC + examen (3 rondas de emparejar) ---
   const [courseStep, setCourseStep] = useState(0);
+  const [examRound, setExamRound] = useState(0);
   const [examMatched, setExamMatched] = useState(new Set());
-  const [examSelectedDomain, setExamSelectedDomain] = useState(null);
-  const [examSelectedDesc, setExamSelectedDesc] = useState(null);
+  const [examSelLeft, setExamSelLeft] = useState(null);
+  const [examSelRight, setExamSelRight] = useState(null);
   const [examWrongFlash, setExamWrongFlash] = useState(false);
-  const [examDescOrder] = useState(() => shuffleArr(DOMAINS.map(d => d.key)));
+  const [examRightOrders] = useState(() => EXAM_ROUNDS.map(r => shuffleArr(r.pairs.map(p => p.id))));
 
   // --- estado modo supervisión ---
   const [supervisionPos, setSupervisionPos] = useState(0);
@@ -2530,30 +2619,37 @@ export default function NeuroDetectiveRDoC() {
     }
   }
 
-  function handleExamPick(side, key) {
-    if (examMatched.has(key) && side === "domain") return;
-    if (side === "domain") {
-      setExamSelectedDomain(key);
-      if (examSelectedDesc) checkExamMatch(key, examSelectedDesc);
+  function handleExamPick(side, id) {
+    if (examMatched.has(id)) return;
+    if (side === "left") {
+      setExamSelLeft(id);
+      if (examSelRight) checkExamMatch(id, examSelRight);
     } else {
-      setExamSelectedDesc(key);
-      if (examSelectedDomain) checkExamMatch(examSelectedDomain, key);
+      setExamSelRight(id);
+      if (examSelLeft) checkExamMatch(examSelLeft, id);
     }
   }
 
-  function checkExamMatch(domainKey, descKey) {
-    if (domainKey === descKey) {
-      setExamMatched(prev => new Set(prev).add(domainKey));
-      setExamSelectedDomain(null);
-      setExamSelectedDesc(null);
+  function checkExamMatch(leftId, rightId) {
+    if (leftId === rightId) {
+      setExamMatched(prev => new Set(prev).add(leftId));
+      setExamSelLeft(null);
+      setExamSelRight(null);
     } else {
       setExamWrongFlash(true);
       setTimeout(() => {
         setExamWrongFlash(false);
-        setExamSelectedDomain(null);
-        setExamSelectedDesc(null);
+        setExamSelLeft(null);
+        setExamSelRight(null);
       }, 600);
     }
+  }
+
+  function advanceExamRound() {
+    setExamRound(r => r + 1);
+    setExamMatched(new Set());
+    setExamSelLeft(null);
+    setExamSelRight(null);
   }
 
   function resetSupervision() {
@@ -2859,7 +2955,7 @@ export default function NeuroDetectiveRDoC() {
               Repaso breve de los 6 dominios y las 8 unidades de análisis, con un mini-examen de emparejar al final.
             </p>
             <button
-              onClick={() => { setCourseStep(0); setExamMatched(new Set()); setExamSelectedDomain(null); setExamSelectedDesc(null); setScreen("course"); }}
+              onClick={() => { setCourseStep(0); setExamRound(0); setExamMatched(new Set()); setExamSelLeft(null); setExamSelRight(null); setScreen("course"); }}
               className="mt-3 w-full bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/40 active:scale-[0.98] transition-all text-purple-200 font-bold py-2.5 rounded-xl flex items-center justify-center gap-2 text-sm"
             >
               Empezar curso <ChevronRight className="w-4 h-4" />
@@ -3079,6 +3175,101 @@ export default function NeuroDetectiveRDoC() {
           </div>
         )
       },
+      {
+        title: "Un caso resuelto, capa por capa",
+        content: (
+          <div>
+            <p className="text-slate-300 text-sm leading-relaxed mb-3">
+              Cada expediente te pide razonar en <span className="text-cyan-400">5 capas</span>. Así se ven encadenadas en un caso real:
+            </p>
+            <div className="bg-slate-800/50 rounded-lg px-3 py-2.5 mb-3 text-sm text-slate-300 italic">
+              "Un paciente reconoce el rostro de su esposa, pero no siente que sea ella — dice que es una impostora idéntica."
+            </div>
+            <div className="space-y-2">
+              {[
+                { k: "Síndrome", v: "S. de Capgras (desconexión fusiforme-amígdala)" },
+                { k: "Dominio", v: "Procesos Sociales" },
+                { k: "Constructo", v: "Percepción y comprensión del otro" },
+                { k: "Unidad", v: "Circuitos" },
+                { k: "Instrumento", v: "Eval. neuropsicológica + neuroimagen del ACV" },
+              ].map(row => (
+                <div key={row.k} className="flex gap-2 items-start">
+                  <span className="text-cyan-300 font-bold text-xs w-20 flex-shrink-0">{row.k}</span>
+                  <span className="text-slate-300 text-xs">{row.v}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )
+      },
+      {
+        title: "Los constructos de cada dominio",
+        content: (
+          <div>
+            <p className="text-slate-400 text-xs mb-3">El dominio dice <span className="text-cyan-300">qué área</span> falla; el constructo dice <span className="text-cyan-300">exactamente qué</span> dentro de ella. Estos son los que preguntan los casos:</p>
+            <div className="space-y-2">
+              {DOMAINS.map(d => (
+                <div key={d.key} className="bg-slate-800/50 rounded-lg px-3 py-2">
+                  <span className="text-cyan-300 font-bold text-xs">{d.label}</span>
+                  <p className="text-slate-300 text-xs mt-1">{CONSTRUCTS_BY_DOMAIN[d.key].join(" · ")}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )
+      },
+      {
+        title: "Diferenciaciones clave (los errores trampa)",
+        content: (
+          <div>
+            <p className="text-slate-400 text-xs mb-3">Los casos avanzados se deciden en estas distinciones. Aquí está la regla para no caer:</p>
+            <div className="space-y-2">
+              {KEY_DISTINCTIONS.map((d, i) => (
+                <div key={i} className="bg-slate-800/50 rounded-lg px-3 py-2">
+                  <p className="text-xs font-bold mb-0.5">
+                    <span className="text-emerald-300">{d.a}</span>
+                    <span className="text-slate-500"> vs </span>
+                    <span className="text-amber-300">{d.b}</span>
+                  </p>
+                  <p className="text-slate-400 text-[11px] leading-relaxed">{d.rule}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )
+      },
+      {
+        title: "Mapa de instrumentos",
+        content: (
+          <div>
+            <p className="text-slate-400 text-xs mb-3">Qué mide cada uno y a quién. Ojo con el rango de edad — es el error más común:</p>
+            <div className="space-y-1.5">
+              {INSTRUMENTS.map(ins => (
+                <div key={ins.name} className="flex gap-2 items-baseline bg-slate-800/50 rounded-lg px-3 py-1.5">
+                  <span className="text-purple-300 font-bold text-xs flex-shrink-0 w-32">{ins.name}</span>
+                  <span className="text-slate-400 text-[11px]">{ins.use}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )
+      },
+      {
+        title: "Fichero de síndromes",
+        content: (
+          <div>
+            <p className="text-slate-400 text-xs mb-3">Referencia rápida de los cuadros que más se repiten en los expedientes:</p>
+            <div className="space-y-2">
+              {SYNDROME_FILE.map(s => (
+                <div key={s.name} className="bg-slate-800/50 rounded-lg px-3 py-2">
+                  <span className="text-rose-300 font-bold text-xs">{s.name}</span>
+                  <p className="text-slate-400 text-[11px] mt-0.5 leading-relaxed">{s.desc}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )
+      },
     ];
     const slide = slides[courseStep];
     return (
@@ -3135,72 +3326,36 @@ export default function NeuroDetectiveRDoC() {
   }
 
   if (screen === "exam") {
-    const allMatched = examMatched.size === DOMAINS.length;
+    const round = EXAM_ROUNDS[examRound];
+    const roundComplete = examMatched.size === round.pairs.length;
+    const isLastRound = examRound === EXAM_ROUNDS.length - 1;
+    const passed = roundComplete && isLastRound;
     return (
       <div className="min-h-screen w-full bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-900 p-4 sm:p-6">
         <div className="max-w-2xl mx-auto">
           <div className="flex items-center justify-between mb-4">
             <span className="text-xs font-bold text-purple-300 bg-purple-500/10 px-3 py-1.5 rounded-full flex items-center gap-1.5">
-              <GraduationCap className="w-3.5 h-3.5" /> Mini-examen · Emparejar dominios
+              <GraduationCap className="w-3.5 h-3.5" /> Mini-examen · {round.chip}
             </span>
             <button onClick={goHome} className="text-slate-500 hover:text-slate-300 flex items-center gap-1 text-xs">
               <X className="w-3.5 h-3.5" /> Salir
             </button>
           </div>
 
-          {!allMatched ? (
-            <div className="bg-slate-900/60 border border-indigo-500/30 rounded-2xl p-6 shadow-2xl backdrop-blur">
-              <p className="text-slate-300 text-sm mb-4">Toca un dominio y luego su descripción correcta. ({examMatched.size}/{DOMAINS.length} emparejados)</p>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-2">
-                  {DOMAINS.map(d => {
-                    const matched = examMatched.has(d.key);
-                    const selected = examSelectedDomain === d.key;
-                    return (
-                      <button
-                        key={d.key}
-                        onClick={() => handleExamPick("domain", d.key)}
-                        disabled={matched}
-                        className={`w-full text-left px-3 py-3 rounded-xl border text-xs font-bold transition-all ${
-                          matched ? "border-emerald-500 bg-emerald-500/10 text-emerald-300" :
-                          selected && examWrongFlash ? "border-red-500 bg-red-500/10 text-red-200" :
-                          selected ? "border-cyan-400 bg-cyan-500/10 text-cyan-200" :
-                          "border-slate-700 bg-slate-800/50 hover:bg-slate-800 text-slate-100"
-                        }`}
-                      >
-                        {d.label}
-                      </button>
-                    );
-                  })}
-                </div>
-                <div className="space-y-2">
-                  {examDescOrder.map(key => {
-                    const matched = examMatched.has(key);
-                    const selected = examSelectedDesc === key;
-                    return (
-                      <button
-                        key={key}
-                        onClick={() => handleExamPick("desc", key)}
-                        disabled={matched}
-                        className={`w-full text-left px-3 py-3 rounded-xl border text-[11px] transition-all ${
-                          matched ? "border-emerald-500 bg-emerald-500/10 text-emerald-300" :
-                          selected && examWrongFlash ? "border-red-500 bg-red-500/10 text-red-200" :
-                          selected ? "border-cyan-400 bg-cyan-500/10 text-cyan-200" :
-                          "border-slate-700 bg-slate-800/50 hover:bg-slate-800 text-slate-300"
-                        }`}
-                      >
-                        {DOMAIN_DESCRIPTIONS[key]}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-          ) : (
+          {/* Progreso por rondas */}
+          <div className="flex gap-1.5 mb-4">
+            {EXAM_ROUNDS.map((_, i) => (
+              <div key={i} className={`h-1.5 flex-1 rounded-full transition-colors ${
+                i < examRound || passed ? "bg-purple-400" : i === examRound ? "bg-purple-400/50" : "bg-slate-700"
+              }`} />
+            ))}
+          </div>
+
+          {passed ? (
             <div className="bg-slate-900/60 border border-emerald-500/30 rounded-2xl p-8 shadow-2xl backdrop-blur text-center">
               <div className="text-5xl mb-3">🎓</div>
               <h2 className="text-xl font-bold text-white">¡Examen aprobado!</h2>
-              <p className="text-slate-400 text-sm mt-2">Ya tienes las bases de la matriz RDoC. Hora de aplicarlo en casos reales.</p>
+              <p className="text-slate-400 text-sm mt-2">Dominaste las tres capas — dominios, constructos e instrumentos. Hora de aplicarlo en casos reales.</p>
               <div className="flex gap-3 mt-6">
                 <button
                   onClick={handleStartGame}
@@ -3214,6 +3369,67 @@ export default function NeuroDetectiveRDoC() {
                 >
                   Inicio
                 </button>
+              </div>
+            </div>
+          ) : roundComplete ? (
+            <div className="bg-slate-900/60 border border-emerald-500/30 rounded-2xl p-8 shadow-2xl backdrop-blur text-center">
+              <div className="text-4xl mb-3">✅</div>
+              <h2 className="text-lg font-bold text-white">Ronda {examRound + 1} completada</h2>
+              <p className="text-slate-400 text-sm mt-2">Bien. Siguiente reto: <span className="text-purple-300 font-semibold">{EXAM_ROUNDS[examRound + 1].chip}</span>.</p>
+              <button
+                onClick={advanceExamRound}
+                className="mt-6 w-full bg-purple-500 hover:bg-purple-400 active:scale-[0.98] transition-all text-slate-900 font-bold py-3 rounded-xl flex items-center justify-center gap-2"
+              >
+                Siguiente ronda <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          ) : (
+            <div className="bg-slate-900/60 border border-indigo-500/30 rounded-2xl p-6 shadow-2xl backdrop-blur">
+              <p className="text-slate-300 text-sm mb-4">{round.instruction} ({examMatched.size}/{round.pairs.length} emparejados)</p>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  {round.pairs.map(p => {
+                    const matched = examMatched.has(p.id);
+                    const selected = examSelLeft === p.id;
+                    return (
+                      <button
+                        key={p.id}
+                        onClick={() => handleExamPick("left", p.id)}
+                        disabled={matched}
+                        className={`w-full text-left px-3 py-3 rounded-xl border text-xs font-bold transition-all ${
+                          matched ? "border-emerald-500 bg-emerald-500/10 text-emerald-300" :
+                          selected && examWrongFlash ? "border-red-500 bg-red-500/10 text-red-200" :
+                          selected ? "border-cyan-400 bg-cyan-500/10 text-cyan-200" :
+                          "border-slate-700 bg-slate-800/50 hover:bg-slate-800 text-slate-100"
+                        }`}
+                      >
+                        {p.left}
+                      </button>
+                    );
+                  })}
+                </div>
+                <div className="space-y-2">
+                  {examRightOrders[examRound].map(id => {
+                    const pair = round.pairs.find(p => p.id === id);
+                    const matched = examMatched.has(id);
+                    const selected = examSelRight === id;
+                    return (
+                      <button
+                        key={id}
+                        onClick={() => handleExamPick("right", id)}
+                        disabled={matched}
+                        className={`w-full text-left px-3 py-3 rounded-xl border text-[11px] transition-all ${
+                          matched ? "border-emerald-500 bg-emerald-500/10 text-emerald-300" :
+                          selected && examWrongFlash ? "border-red-500 bg-red-500/10 text-red-200" :
+                          selected ? "border-cyan-400 bg-cyan-500/10 text-cyan-200" :
+                          "border-slate-700 bg-slate-800/50 hover:bg-slate-800 text-slate-300"
+                        }`}
+                      >
+                        {pair.right}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             </div>
           )}
@@ -3727,7 +3943,7 @@ export default function NeuroDetectiveRDoC() {
           <div className="flex gap-3">
             {tier?.action === "course" ? (
               <button
-                onClick={() => { setCourseStep(0); setExamMatched(new Set()); setScreen("course"); }}
+                onClick={() => { setCourseStep(0); setExamRound(0); setExamMatched(new Set()); setExamSelLeft(null); setExamSelRight(null); setScreen("course"); }}
                 className="flex-1 bg-purple-500 hover:bg-purple-400 active:scale-[0.98] transition-all text-slate-900 font-bold py-3 rounded-xl flex items-center justify-center gap-2"
               >
                 <GraduationCap className="w-4 h-4" /> Ir al curso introductorio
