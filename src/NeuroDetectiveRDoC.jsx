@@ -61,6 +61,49 @@ const KEY_DISTINCTIONS = [
   { a: "Buscar el contacto (autismo)", b: "Evitarlo (ansiedad social)", rule: "El autismo busca el vínculo pero no capta las reglas implícitas; la ansiedad social evita el contacto por miedo al juicio." },
 ];
 
+// --- Actividades pedagógicas del curso (viñetas clínicas nuevas, no son de los 27 casos) ---
+// Actividad 1: "¿Cuál es la diferencia?" — drill de distinciones con escenarios breves.
+const DIFF_DRILL = [
+  { scenario: "Un joven siente el corazón disparado y terror en el instante en que una araña aparece sobre su escritorio.", a: "Miedo agudo", b: "Ansiedad sostenida", correct: "a", rule: "Hay una amenaza presente y concreta → miedo agudo (Valencia Negativa)." },
+  { scenario: "Una persona pasa toda la semana inquieta 'por si algo sale mal' en una reunión que será dentro de varios días.", a: "Miedo agudo", b: "Ansiedad sostenida", correct: "b", rule: "El peligro es futuro e incierto → ansiedad / amenaza potencial." },
+  { scenario: "Un paciente revisa la cerradura 15 veces; sabe que está cerrada y mueve bien las manos, pero no logra detenerse.", a: "Sensoriomotor (ejecución)", b: "Control cognitivo (inhibición)", correct: "b", rule: "El movimiento está intacto; lo que falla es frenar la conducta → inhibición (Sistemas Cognitivos)." },
+  { scenario: "Tras salir de un coma, alguien se duerme y despierta a ratos; su atención sube y baja junto con su nivel de conciencia.", a: "Activación (arousal)", b: "Cognición (atención)", correct: "a", rule: "Lo que fluctúa primero es el nivel de conciencia → arousal (Activación/Regulación)." },
+];
+
+// Actividad 2: "Clasifica en la matriz" — una viñeta nueva, tres capas RDoC.
+const CLASSIFY_ACTIVITY = {
+  scenario: "Una mujer dejó de disfrutar todo lo que antes le gustaba — comida, música, ver a sus amigos. No siente tristeza intensa ni miedo, solo una ausencia total de placer. Los estudios muestran baja actividad en el circuito de recompensa.",
+  steps: [
+    { key: "dominio", label: "Dominio", options: [
+      { text: "Sistemas de Valencia Positiva", correct: true, fb: "Correcto. La capacidad de experimentar placer y recompensa es el núcleo de Valencia Positiva." },
+      { text: "Sistemas de Valencia Negativa", correct: false, fb: "No: no hay miedo, ansiedad ni pérdida como afecto negativo; lo que falta es el placer (positivo)." },
+      { text: "Sistemas Cognitivos", correct: false, fb: "La atención y la memoria no son el problema central aquí." },
+    ]},
+    { key: "constructo", label: "Constructo", options: [
+      { text: "Respuesta a la recompensa", correct: true, fb: "Correcto. La anhedonia es un déficit en la respuesta a la recompensa." },
+      { text: "Control cognitivo", correct: false, fb: "No hay un fallo de inhibición o planeación." },
+      { text: "Miedo agudo", correct: false, fb: "No hay amenaza ni respuesta de miedo." },
+    ]},
+    { key: "unidad", label: "Unidad de análisis", options: [
+      { text: "Circuitos (circuito de recompensa)", correct: true, fb: "Correcto. El dato que aporta el mecanismo es la baja actividad del circuito de recompensa." },
+      { text: "Autorreporte", correct: false, fb: "Lo que ella dice apoya el cuadro, pero el mecanismo se documenta a nivel de circuitos aquí." },
+      { text: "Genes", correct: false, fb: "No se menciona información genética en el caso." },
+    ]},
+  ],
+};
+
+// Actividad 3: tarjetas de repaso (constructo / término ↔ definición).
+const FLASHCARDS = [
+  { front: "Miedo agudo", back: "Respuesta a una amenaza presente y concreta (Valencia Negativa)." },
+  { front: "Ansiedad sostenida", back: "Anticipación de un peligro futuro e incierto (Valencia Negativa)." },
+  { front: "Anhedonia", back: "Pérdida de la capacidad de sentir placer; déficit de respuesta a la recompensa (Valencia Positiva)." },
+  { front: "Control cognitivo (inhibición)", back: "Capacidad de frenar una respuesta automática (Sistemas Cognitivos)." },
+  { front: "Teoría de la mente", back: "Inferir los estados mentales de los demás (Procesos Sociales)." },
+  { front: "Arousal (activación)", back: "Nivel global de activación y conciencia (Activación y Regulación)." },
+  { front: "Praxias", back: "Ejecución de movimientos aprendidos con propósito (Sensoriomotores)." },
+  { front: "Memoria declarativa", back: "Consolidar y recuperar hechos y eventos (Sistemas Cognitivos)." },
+];
+
 // Mini-examen por capas: 3 rondas de emparejar. Se empareja por `id`.
 const EXAM_ROUNDS = [
   {
@@ -2500,8 +2543,11 @@ export default function NeuroDetectiveRDoC() {
   const [studySelected, setStudySelected] = useState(null);
   const [studyShowFeedback, setStudyShowFeedback] = useState(false);
 
-  // --- estado curso RDoC + examen (3 rondas de emparejar) ---
+  // --- estado curso RDoC + actividades + examen (3 rondas de emparejar) ---
   const [courseStep, setCourseStep] = useState(0);
+  const [diffDrillAns, setDiffDrillAns] = useState({});   // idx -> "a" | "b"
+  const [classifyAns, setClassifyAns] = useState({});     // stepKey -> optionIndex
+  const [flippedCards, setFlippedCards] = useState(new Set());
   const [examRound, setExamRound] = useState(0);
   const [examMatched, setExamMatched] = useState(new Set());
   const [examSelLeft, setExamSelLeft] = useState(null);
@@ -2925,7 +2971,7 @@ export default function NeuroDetectiveRDoC() {
               Repaso breve de los 6 dominios y las 8 unidades de análisis, con un mini-examen de emparejar al final.
             </p>
             <button
-              onClick={() => { setCourseStep(0); setExamRound(0); setExamMatched(new Set()); setExamSelLeft(null); setExamSelRight(null); setScreen("course"); }}
+              onClick={() => { setCourseStep(0); setDiffDrillAns({}); setClassifyAns({}); setFlippedCards(new Set()); setExamRound(0); setExamMatched(new Set()); setExamSelLeft(null); setExamSelRight(null); setScreen("course"); }}
               className="mt-3 w-full bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/40 active:scale-[0.98] transition-all text-purple-200 font-bold py-2.5 rounded-xl flex items-center justify-center gap-2 text-sm"
             >
               Empezar curso <ChevronRight className="w-4 h-4" />
@@ -3204,6 +3250,114 @@ export default function NeuroDetectiveRDoC() {
                   <p className="text-slate-400 text-[11px] leading-relaxed">{d.rule}</p>
                 </div>
               ))}
+            </div>
+          </div>
+        )
+      },
+      {
+        title: "Práctica · ¿Cuál es la diferencia?",
+        content: (
+          <div>
+            <p className="text-slate-400 text-xs mb-3">Lee cada escenario y elige. La regla aparece al instante — sin puntaje, es para aprender.</p>
+            <div className="space-y-3">
+              {DIFF_DRILL.map((item, i) => {
+                const ans = diffDrillAns[i];
+                const answered = ans != null;
+                const isCorrect = ans === item.correct;
+                return (
+                  <div key={i} className="bg-slate-800/50 rounded-lg px-3 py-3">
+                    <p className="text-slate-200 text-xs mb-2">{item.scenario}</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      {["a", "b"].map(opt => {
+                        const label = opt === "a" ? item.a : item.b;
+                        const sel = ans === opt;
+                        let cls = "border-slate-700 bg-slate-800/60 text-slate-200 hover:bg-slate-800";
+                        if (answered) {
+                          if (opt === item.correct) cls = "border-emerald-500 bg-emerald-500/10 text-emerald-200";
+                          else if (sel) cls = "border-red-500 bg-red-500/10 text-red-200";
+                          else cls = "border-slate-800 bg-slate-800/20 text-slate-500";
+                        }
+                        return (
+                          <button key={opt} disabled={answered}
+                            onClick={() => setDiffDrillAns(prev => ({ ...prev, [i]: opt }))}
+                            className={`px-2 py-2 rounded-lg border text-[11px] font-semibold transition-all ${cls}`}>
+                            {label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    {answered && (
+                      <p className={`text-[11px] mt-2 leading-relaxed ${isCorrect ? "text-emerald-300" : "text-amber-300"}`}>
+                        {isCorrect ? "✓ " : "✗ "}{item.rule}
+                      </p>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )
+      },
+      {
+        title: "Práctica · Clasifica en la matriz",
+        content: (
+          <div>
+            <div className="bg-slate-800/50 rounded-lg px-3 py-2.5 mb-3 text-xs text-slate-300 italic">{CLASSIFY_ACTIVITY.scenario}</div>
+            <div className="space-y-3">
+              {CLASSIFY_ACTIVITY.steps.map(step => {
+                const sel = classifyAns[step.key];
+                const answered = sel != null;
+                return (
+                  <div key={step.key}>
+                    <p className="text-cyan-300 font-bold text-xs mb-1.5">{step.label}</p>
+                    <div className="space-y-1.5">
+                      {step.options.map((opt, oi) => {
+                        const isSel = sel === oi;
+                        let cls = "border-slate-700 bg-slate-800/60 text-slate-200 hover:bg-slate-800";
+                        if (answered) {
+                          if (opt.correct) cls = "border-emerald-500 bg-emerald-500/10 text-emerald-200";
+                          else if (isSel) cls = "border-red-500 bg-red-500/10 text-red-200";
+                          else cls = "border-slate-800 bg-slate-800/20 text-slate-500";
+                        }
+                        return (
+                          <button key={oi} disabled={answered}
+                            onClick={() => setClassifyAns(prev => ({ ...prev, [step.key]: oi }))}
+                            className={`w-full text-left px-3 py-2 rounded-lg border text-[11px] transition-all ${cls}`}>
+                            {opt.text}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    {answered && (
+                      <p className={`text-[11px] mt-1.5 leading-relaxed ${step.options[sel].correct ? "text-emerald-300" : "text-amber-300"}`}>
+                        {step.options[sel].fb}
+                      </p>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )
+      },
+      {
+        title: "Repaso · Tarjetas",
+        content: (
+          <div>
+            <p className="text-slate-400 text-xs mb-3">Toca cada tarjeta para revelar la definición. Repaso activo antes del examen.</p>
+            <div className="grid grid-cols-2 gap-2">
+              {FLASHCARDS.map((card, i) => {
+                const flipped = flippedCards.has(i);
+                return (
+                  <button key={i}
+                    onClick={() => setFlippedCards(prev => { const n = new Set(prev); n.has(i) ? n.delete(i) : n.add(i); return n; })}
+                    className={`min-h-[78px] rounded-lg border px-3 py-2 text-left transition-all ${flipped ? "border-cyan-500/50 bg-cyan-500/10" : "border-slate-700 bg-slate-800/60 hover:bg-slate-800"}`}>
+                    {flipped
+                      ? <span className="text-slate-300 text-[11px] leading-snug">{card.back}</span>
+                      : <span className="text-cyan-200 text-xs font-bold">{card.front}</span>}
+                  </button>
+                );
+              })}
             </div>
           </div>
         )
@@ -3881,7 +4035,7 @@ export default function NeuroDetectiveRDoC() {
           <div className="flex gap-3">
             {tier?.action === "course" ? (
               <button
-                onClick={() => { setCourseStep(0); setExamRound(0); setExamMatched(new Set()); setExamSelLeft(null); setExamSelRight(null); setScreen("course"); }}
+                onClick={() => { setCourseStep(0); setDiffDrillAns({}); setClassifyAns({}); setFlippedCards(new Set()); setExamRound(0); setExamMatched(new Set()); setExamSelLeft(null); setExamSelRight(null); setScreen("course"); }}
                 className="flex-1 bg-purple-500 hover:bg-purple-400 active:scale-[0.98] transition-all text-slate-900 font-bold py-3 rounded-xl flex items-center justify-center gap-2"
               >
                 <GraduationCap className="w-4 h-4" /> Ir al curso introductorio
