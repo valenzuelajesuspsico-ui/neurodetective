@@ -105,40 +105,28 @@ const FLASHCARDS = [
 ];
 
 // Mini-examen por capas: 3 rondas de emparejar. Se empareja por `id`.
-const EXAM_ROUNDS = [
-  {
-    chip: "Emparejar dominios",
-    instruction: "Toca un dominio y luego su descripción correcta.",
-    leftHeading: "Dominio",
-    pairs: DOMAINS.map(d => ({ id: d.key, left: d.label, right: DOMAIN_DESCRIPTIONS[d.key] })),
-  },
-  {
-    chip: "Constructo → Dominio",
-    instruction: "Toca un constructo y luego el dominio al que pertenece.",
-    leftHeading: "Constructo",
-    pairs: [
-      { id: "VN", left: "Miedo agudo / amenaza", right: "Valencia Negativa" },
-      { id: "VP", left: "Respuesta a la recompensa (anhedonia)", right: "Valencia Positiva" },
-      { id: "COG", left: "Control cognitivo (inhibición)", right: "Sistemas Cognitivos" },
-      { id: "SOC", left: "Teoría de la mente", right: "Procesos Sociales" },
-      { id: "AR", left: "Activación (arousal)", right: "Activación / Regulación" },
-      { id: "SM", left: "Agencia / control de la acción", right: "Sensoriomotores" },
-    ],
-  },
-  {
-    chip: "Instrumento → Uso",
-    instruction: "Toca un instrumento y luego para qué (o para quién) se usa.",
-    leftHeading: "Instrumento",
-    pairs: [
-      { id: "wisc", left: "WISC-V", right: "Inteligencia · 6 a 16 años" },
-      { id: "wais", left: "WAIS-IV", right: "Inteligencia · adultos" },
-      { id: "banfe", left: "BANFE-3", right: "Funciones ejecutivas" },
-      { id: "srs", left: "SRS-2", right: "Autismo (respuesta social)" },
-      { id: "shaps", left: "SHAPS", right: "Anhedonia" },
-      { id: "mna", left: "MNA", right: "Tamizaje nutricional" },
-    ],
-  },
-];
+// Check de preparación: un mini-caso nuevo, integrador, sin feedback paso a paso.
+// (Distinto a los 27 casos y a las viñetas de las actividades de práctica.)
+const READINESS_CHECK = {
+  scenario: "Un hombre de 70 años, tras una caída leve, empieza a olvidar conversaciones recientes: repite las mismas preguntas y no recuerda qué desayunó. Su nivel de alerta es normal y en general está orientado, pero la memoria de hechos recientes le falla de forma notoria.",
+  questions: [
+    { key: "dominio", label: "Dominio", options: [
+        { text: "Sistemas Cognitivos", correct: true },
+        { text: "Activación y Regulación", correct: false },
+        { text: "Procesos Sociales", correct: false },
+      ], explain: "Su nivel de alerta está conservado; lo que falla es la memoria, una función cognitiva." },
+    { key: "constructo", label: "Constructo", options: [
+        { text: "Memoria declarativa", correct: true },
+        { text: "Atención", correct: false },
+        { text: "Control cognitivo (inhibición)", correct: false },
+      ], explain: "Olvidar hechos y eventos recientes apunta a la memoria declarativa, no a la atención ni a la inhibición." },
+    { key: "unidad", label: "Unidad de análisis", options: [
+        { text: "Conducta (desempeño en memoria observado)", correct: true },
+        { text: "Genes", correct: false },
+        { text: "Autorreporte", correct: false },
+      ], explain: "El déficit se documenta observando su desempeño en memoria durante la evaluación, no por estudio genético ni solo por lo que él reporta." },
+  ],
+};
 
 const BASE_POINTS = { sindrome: 100, dominio: 100, constructo: 150, unidad: 150, instrumento: 100 };
 const QTYPE_LABEL = { sindrome: "Diagnóstico clínico", dominio: "Dominio RDoC", constructo: "Constructo RDoC", unidad: "Unidad de análisis", instrumento: "Instrumento de evaluación" };
@@ -2543,17 +2531,13 @@ export default function NeuroDetectiveRDoC() {
   const [studySelected, setStudySelected] = useState(null);
   const [studyShowFeedback, setStudyShowFeedback] = useState(false);
 
-  // --- estado curso RDoC + actividades + examen (3 rondas de emparejar) ---
+  // --- estado curso RDoC + actividades + check de preparación ---
   const [courseStep, setCourseStep] = useState(0);
   const [diffDrillAns, setDiffDrillAns] = useState({});   // idx -> "a" | "b"
   const [classifyAns, setClassifyAns] = useState({});     // stepKey -> optionIndex
   const [flippedCards, setFlippedCards] = useState(new Set());
-  const [examRound, setExamRound] = useState(0);
-  const [examMatched, setExamMatched] = useState(new Set());
-  const [examSelLeft, setExamSelLeft] = useState(null);
-  const [examSelRight, setExamSelRight] = useState(null);
-  const [examWrongFlash, setExamWrongFlash] = useState(false);
-  const [examRightOrders] = useState(() => EXAM_ROUNDS.map(r => shuffleArr(r.pairs.map(p => p.id))));
+  const [checkAns, setCheckAns] = useState({});           // question.key -> optionIndex
+  const [checkSubmitted, setCheckSubmitted] = useState(false);
 
   // --- estado modo supervisión ---
   const [supervisionPos, setSupervisionPos] = useState(0);
@@ -2635,37 +2619,9 @@ export default function NeuroDetectiveRDoC() {
     }
   }
 
-  function handleExamPick(side, id) {
-    if (examMatched.has(id)) return;
-    if (side === "left") {
-      setExamSelLeft(id);
-      if (examSelRight) checkExamMatch(id, examSelRight);
-    } else {
-      setExamSelRight(id);
-      if (examSelLeft) checkExamMatch(examSelLeft, id);
-    }
-  }
-
-  function checkExamMatch(leftId, rightId) {
-    if (leftId === rightId) {
-      setExamMatched(prev => new Set(prev).add(leftId));
-      setExamSelLeft(null);
-      setExamSelRight(null);
-    } else {
-      setExamWrongFlash(true);
-      setTimeout(() => {
-        setExamWrongFlash(false);
-        setExamSelLeft(null);
-        setExamSelRight(null);
-      }, 600);
-    }
-  }
-
-  function advanceExamRound() {
-    setExamRound(r => r + 1);
-    setExamMatched(new Set());
-    setExamSelLeft(null);
-    setExamSelRight(null);
+  function resetReadinessCheck() {
+    setCheckAns({});
+    setCheckSubmitted(false);
   }
 
   function resetSupervision() {
@@ -2971,7 +2927,7 @@ export default function NeuroDetectiveRDoC() {
               Repaso breve de los 6 dominios y las 8 unidades de análisis, con un mini-examen de emparejar al final.
             </p>
             <button
-              onClick={() => { setCourseStep(0); setDiffDrillAns({}); setClassifyAns({}); setFlippedCards(new Set()); setExamRound(0); setExamMatched(new Set()); setExamSelLeft(null); setExamSelRight(null); setScreen("course"); }}
+              onClick={() => { setCourseStep(0); setDiffDrillAns({}); setClassifyAns({}); setFlippedCards(new Set()); resetReadinessCheck(); setScreen("course"); }}
               className="mt-3 w-full bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/40 active:scale-[0.98] transition-all text-purple-200 font-bold py-2.5 rounded-xl flex items-center justify-center gap-2 text-sm"
             >
               Empezar curso <ChevronRight className="w-4 h-4" />
@@ -3405,10 +3361,10 @@ export default function NeuroDetectiveRDoC() {
               </button>
             ) : (
               <button
-                onClick={() => setScreen("exam")}
+                onClick={() => { resetReadinessCheck(); setScreen("exam"); }}
                 className="flex-1 bg-purple-500 hover:bg-purple-400 active:scale-[0.98] transition-all text-slate-900 font-bold py-2.5 rounded-lg flex items-center justify-center gap-2 text-sm"
               >
-                Comenzar mini-examen <ChevronRight className="w-4 h-4" />
+                Check de preparación <ChevronRight className="w-4 h-4" />
               </button>
             )}
           </div>
@@ -3418,113 +3374,110 @@ export default function NeuroDetectiveRDoC() {
   }
 
   if (screen === "exam") {
-    const round = EXAM_ROUNDS[examRound];
-    const roundComplete = examMatched.size === round.pairs.length;
-    const isLastRound = examRound === EXAM_ROUNDS.length - 1;
-    const passed = roundComplete && isLastRound;
+    const allAnswered = READINESS_CHECK.questions.every(q => checkAns[q.key] != null);
+    const score = READINESS_CHECK.questions.reduce((acc, q) => {
+      const sel = checkAns[q.key];
+      return acc + (sel != null && q.options[sel].correct ? 1 : 0);
+    }, 0);
+    const total = READINESS_CHECK.questions.length;
     return (
       <div className="min-h-screen w-full bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-900 p-4 sm:p-6">
         <div className="max-w-2xl mx-auto">
           <div className="flex items-center justify-between mb-4">
             <span className="text-xs font-bold text-purple-300 bg-purple-500/10 px-3 py-1.5 rounded-full flex items-center gap-1.5">
-              <GraduationCap className="w-3.5 h-3.5" /> Mini-examen · {round.chip}
+              <GraduationCap className="w-3.5 h-3.5" /> Check de preparación
             </span>
             <button onClick={goHome} className="text-slate-500 hover:text-slate-300 flex items-center gap-1 text-xs">
               <X className="w-3.5 h-3.5" /> Salir
             </button>
           </div>
 
-          {/* Progreso por rondas */}
-          <div className="flex gap-1.5 mb-4">
-            {EXAM_ROUNDS.map((_, i) => (
-              <div key={i} className={`h-1.5 flex-1 rounded-full transition-colors ${
-                i < examRound || passed ? "bg-purple-400" : i === examRound ? "bg-purple-400/50" : "bg-slate-700"
-              }`} />
-            ))}
-          </div>
+          {checkSubmitted && (
+            <div className={`mb-4 rounded-2xl border p-5 text-center ${
+              score === total ? "border-emerald-500/40 bg-emerald-500/10" : "border-amber-500/40 bg-amber-500/10"
+            }`}>
+              <div className="text-4xl mb-2">{score === total ? "🎓" : "📋"}</div>
+              <h2 className="text-lg font-bold text-white">{score}/{total} capas correctas</h2>
+              <p className="text-slate-300 text-sm mt-1">
+                {score === total
+                  ? "Encadenaste las tres capas en un caso nuevo. Estás listo para los expedientes reales."
+                  : "Revisa abajo las capas que se te escaparon — luego pasa a los casos, donde cada error trae su explicación."}
+              </p>
+            </div>
+          )}
 
-          {passed ? (
-            <div className="bg-slate-900/60 border border-emerald-500/30 rounded-2xl p-8 shadow-2xl backdrop-blur text-center">
-              <div className="text-5xl mb-3">🎓</div>
-              <h2 className="text-xl font-bold text-white">¡Examen aprobado!</h2>
-              <p className="text-slate-400 text-sm mt-2">Dominaste las tres capas — dominios, constructos e instrumentos. Hora de aplicarlo en casos reales.</p>
-              <div className="flex gap-3 mt-6">
+          <div className="bg-slate-900/60 border border-indigo-500/30 rounded-2xl p-6 shadow-2xl backdrop-blur">
+            {!checkSubmitted && (
+              <p className="text-slate-400 text-xs mb-3">Lee el caso y resuelve las <span className="text-purple-300">3 capas</span> de corrido. A diferencia de la práctica, aquí el resultado aparece al final — como en un caso real.</p>
+            )}
+            <div className="bg-slate-800/50 rounded-lg px-3 py-2.5 mb-4 text-sm text-slate-300 italic">{READINESS_CHECK.scenario}</div>
+
+            <div className="space-y-4">
+              {READINESS_CHECK.questions.map(q => {
+                const sel = checkAns[q.key];
+                return (
+                  <div key={q.key}>
+                    <p className="text-cyan-300 font-bold text-xs mb-1.5">{q.label}</p>
+                    <div className="space-y-1.5">
+                      {q.options.map((opt, oi) => {
+                        const isSel = sel === oi;
+                        let cls = "border-slate-700 bg-slate-800/50 hover:bg-slate-800 text-slate-200";
+                        if (checkSubmitted) {
+                          if (opt.correct) cls = "border-emerald-500 bg-emerald-500/10 text-emerald-200";
+                          else if (isSel) cls = "border-red-500 bg-red-500/10 text-red-200";
+                          else cls = "border-slate-800 bg-slate-800/20 text-slate-500";
+                        } else if (isSel) {
+                          cls = "border-cyan-400 bg-cyan-500/10 text-cyan-200";
+                        }
+                        return (
+                          <button
+                            key={oi}
+                            disabled={checkSubmitted}
+                            onClick={() => setCheckAns(prev => ({ ...prev, [q.key]: oi }))}
+                            className={`w-full text-left px-3 py-2.5 rounded-lg border text-xs transition-all flex items-center justify-between gap-2 ${cls}`}
+                          >
+                            <span>{opt.text}</span>
+                            {checkSubmitted && opt.correct && <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />}
+                            {checkSubmitted && isSel && !opt.correct && <XCircle className="w-4 h-4 text-red-400 flex-shrink-0" />}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    {checkSubmitted && (
+                      <p className="text-slate-400 text-[11px] mt-1.5 leading-relaxed">{q.explain}</p>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            {!checkSubmitted ? (
+              <button
+                onClick={() => setCheckSubmitted(true)}
+                disabled={!allAnswered}
+                className={`mt-5 w-full font-bold py-3 rounded-xl flex items-center justify-center gap-2 text-sm transition-all ${
+                  allAnswered ? "bg-purple-500 hover:bg-purple-400 active:scale-[0.98] text-slate-900" : "bg-slate-800 text-slate-600 cursor-not-allowed"
+                }`}
+              >
+                {allAnswered ? "Ver mi resultado" : "Responde las 3 capas"} <ChevronRight className="w-4 h-4" />
+              </button>
+            ) : (
+              <div className="flex gap-3 mt-5">
                 <button
                   onClick={handleStartGame}
-                  className="flex-1 bg-cyan-500 hover:bg-cyan-400 active:scale-[0.98] transition-all text-slate-900 font-bold py-3 rounded-xl flex items-center justify-center gap-2"
+                  className="flex-1 bg-cyan-500 hover:bg-cyan-400 active:scale-[0.98] transition-all text-slate-900 font-bold py-3 rounded-xl flex items-center justify-center gap-2 text-sm"
                 >
                   Ir a la sala de expedientes <ChevronRight className="w-4 h-4" />
                 </button>
                 <button
-                  onClick={goHome}
-                  className="px-5 bg-slate-800 hover:bg-slate-700 transition-all text-slate-300 font-medium py-3 rounded-xl"
+                  onClick={resetReadinessCheck}
+                  className="px-4 bg-slate-800 hover:bg-slate-700 transition-all text-slate-300 font-medium py-3 rounded-xl text-sm flex items-center gap-1"
                 >
-                  Inicio
+                  <RotateCcw className="w-4 h-4" /> Reintentar
                 </button>
               </div>
-            </div>
-          ) : roundComplete ? (
-            <div className="bg-slate-900/60 border border-emerald-500/30 rounded-2xl p-8 shadow-2xl backdrop-blur text-center">
-              <div className="text-4xl mb-3">✅</div>
-              <h2 className="text-lg font-bold text-white">Ronda {examRound + 1} completada</h2>
-              <p className="text-slate-400 text-sm mt-2">Bien. Siguiente reto: <span className="text-purple-300 font-semibold">{EXAM_ROUNDS[examRound + 1].chip}</span>.</p>
-              <button
-                onClick={advanceExamRound}
-                className="mt-6 w-full bg-purple-500 hover:bg-purple-400 active:scale-[0.98] transition-all text-slate-900 font-bold py-3 rounded-xl flex items-center justify-center gap-2"
-              >
-                Siguiente ronda <ChevronRight className="w-4 h-4" />
-              </button>
-            </div>
-          ) : (
-            <div className="bg-slate-900/60 border border-indigo-500/30 rounded-2xl p-6 shadow-2xl backdrop-blur">
-              <p className="text-slate-300 text-sm mb-4">{round.instruction} ({examMatched.size}/{round.pairs.length} emparejados)</p>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-2">
-                  {round.pairs.map(p => {
-                    const matched = examMatched.has(p.id);
-                    const selected = examSelLeft === p.id;
-                    return (
-                      <button
-                        key={p.id}
-                        onClick={() => handleExamPick("left", p.id)}
-                        disabled={matched}
-                        className={`w-full text-left px-3 py-3 rounded-xl border text-xs font-bold transition-all ${
-                          matched ? "border-emerald-500 bg-emerald-500/10 text-emerald-300" :
-                          selected && examWrongFlash ? "border-red-500 bg-red-500/10 text-red-200" :
-                          selected ? "border-cyan-400 bg-cyan-500/10 text-cyan-200" :
-                          "border-slate-700 bg-slate-800/50 hover:bg-slate-800 text-slate-100"
-                        }`}
-                      >
-                        {p.left}
-                      </button>
-                    );
-                  })}
-                </div>
-                <div className="space-y-2">
-                  {examRightOrders[examRound].map(id => {
-                    const pair = round.pairs.find(p => p.id === id);
-                    const matched = examMatched.has(id);
-                    const selected = examSelRight === id;
-                    return (
-                      <button
-                        key={id}
-                        onClick={() => handleExamPick("right", id)}
-                        disabled={matched}
-                        className={`w-full text-left px-3 py-3 rounded-xl border text-[11px] transition-all ${
-                          matched ? "border-emerald-500 bg-emerald-500/10 text-emerald-300" :
-                          selected && examWrongFlash ? "border-red-500 bg-red-500/10 text-red-200" :
-                          selected ? "border-cyan-400 bg-cyan-500/10 text-cyan-200" :
-                          "border-slate-700 bg-slate-800/50 hover:bg-slate-800 text-slate-300"
-                        }`}
-                      >
-                        {pair.right}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
     );
@@ -4035,7 +3988,7 @@ export default function NeuroDetectiveRDoC() {
           <div className="flex gap-3">
             {tier?.action === "course" ? (
               <button
-                onClick={() => { setCourseStep(0); setDiffDrillAns({}); setClassifyAns({}); setFlippedCards(new Set()); setExamRound(0); setExamMatched(new Set()); setExamSelLeft(null); setExamSelRight(null); setScreen("course"); }}
+                onClick={() => { setCourseStep(0); setDiffDrillAns({}); setClassifyAns({}); setFlippedCards(new Set()); resetReadinessCheck(); setScreen("course"); }}
                 className="flex-1 bg-purple-500 hover:bg-purple-400 active:scale-[0.98] transition-all text-slate-900 font-bold py-3 rounded-xl flex items-center justify-center gap-2"
               >
                 <GraduationCap className="w-4 h-4" /> Ir al curso introductorio
