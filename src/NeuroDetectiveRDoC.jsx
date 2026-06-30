@@ -2267,37 +2267,65 @@ function PeerReviewCard({ sections }) {
 
 function SupervisionReport({ supCase, selectedId, solved, onPick }) {
   return (
-    <div style={{ marginBottom: "16px" }}>
-      {supCase.segments.map((seg, idx) => {
-        const isSelected = selectedId === seg.id;
-        const isCorrect = seg.id === supCase.correctId;
-        const showGreen = (isSelected && isCorrect) || (solved && isCorrect);
-        const showRed = isSelected && !isCorrect;
-        const bgColor = showGreen ? "rgba(16,185,129,0.18)" : showRed ? "rgba(239,68,68,0.18)" : "rgba(30,41,59,0.6)";
-        const borderColor = showGreen ? "#10b981" : showRed ? "#ef4444" : "#334155";
-        return (
-          <div
-            key={seg.id}
-            onClick={() => { if (!solved) onPick(seg.id); }}
-            style={{
-              display: "flex",
-              gap: "10px",
-              alignItems: "flex-start",
-              padding: "12px 14px",
-              marginBottom: "8px",
-              borderRadius: "10px",
-              border: "1px solid " + borderColor,
-              backgroundColor: bgColor,
-              cursor: solved ? "default" : "pointer",
-            }}
-          >
-            <span style={{ color: "#fdba74", fontSize: "13px", fontWeight: "bold", lineHeight: "1.5" }}>{idx + 1}.</span>
-            <span style={{ color: "#f1f5f9", fontSize: "14px", flex: 1, lineHeight: "1.5" }}>{seg.text}</span>
-            {showGreen ? <span style={{ color: "#34d399", fontWeight: "bold" }}>✓</span> : null}
-            {showRed ? <span style={{ color: "#f87171", fontWeight: "bold" }}>✕</span> : null}
-          </div>
-        );
-      })}
+    <div
+      style={{
+        marginBottom: "16px",
+        borderRadius: "12px",
+        border: "1px solid #334155",
+        backgroundColor: "#f8fafc",
+        boxShadow: "0 10px 30px rgba(0,0,0,0.35)",
+        overflow: "hidden",
+      }}
+    >
+      {/* Encabezado tipo membrete del informe */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "8px",
+          padding: "10px 16px",
+          borderBottom: "1px solid #e2e8f0",
+          backgroundColor: "#eef2f7",
+        }}
+      >
+        <FileText className="w-4 h-4" style={{ color: "#475569" }} />
+        <span style={{ color: "#334155", fontSize: "12px", fontWeight: "bold", textTransform: "uppercase", letterSpacing: "0.04em" }}>
+          Informe neuropsicológico — Colega
+        </span>
+      </div>
+
+      {/* Cuerpo del informe: prosa continua, cada frase es seleccionable */}
+      <p style={{ padding: "16px 18px", margin: 0, color: "#1e293b", fontSize: "14px", lineHeight: "1.9", textAlign: "justify" }}>
+        {supCase.segments.map((seg, idx) => {
+          const isSelected = selectedId === seg.id;
+          const isCorrect = seg.id === supCase.correctId;
+          const showGreen = (isSelected && isCorrect) || (solved && isCorrect);
+          const showRed = isSelected && !isCorrect;
+          const segStyle = {
+            cursor: solved ? "default" : "pointer",
+            borderRadius: "4px",
+            padding: "1px 2px",
+            transition: "background-color 0.15s",
+            backgroundColor: showGreen ? "rgba(16,185,129,0.28)" : showRed ? "rgba(239,68,68,0.28)" : "transparent",
+            boxShadow: showGreen ? "inset 0 -2px 0 #10b981" : showRed ? "inset 0 -2px 0 #ef4444" : "none",
+            color: "#1e293b",
+          };
+          return (
+            <Fragment key={seg.id}>
+              <span
+                onClick={() => { if (!solved) onPick(seg.id); }}
+                className={solved ? "" : "supervision-segment"}
+                style={segStyle}
+              >
+                {seg.text}
+                {showGreen ? <span style={{ color: "#059669", fontWeight: "bold" }}> ✓</span> : null}
+                {showRed ? <span style={{ color: "#dc2626", fontWeight: "bold" }}> ✕</span> : null}
+              </span>
+              {idx < supCase.segments.length - 1 ? " " : null}
+            </Fragment>
+          );
+        })}
+      </p>
     </div>
   );
 }
