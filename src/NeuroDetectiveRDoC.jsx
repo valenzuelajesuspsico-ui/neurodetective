@@ -61,36 +61,6 @@ const KEY_DISTINCTIONS = [
   { a: "Buscar el contacto (autismo)", b: "Evitarlo (ansiedad social)", rule: "El autismo busca el vínculo pero no capta las reglas implícitas; la ansiedad social evita el contacto por miedo al juicio." },
 ];
 
-// Mapa de instrumentos: qué mide, a quién.
-const INSTRUMENTS = [
-  { name: "WISC-V", use: "Inteligencia · 6 a 16 años" },
-  { name: "WAIS-IV", use: "Inteligencia · adultos (el distractor clásico del WISC)" },
-  { name: "NEUROPSI At. y Memoria", use: "Perfil de atención y memoria" },
-  { name: "NEUROPSI Breve", use: "Tamizaje cognitivo rápido / seriado" },
-  { name: "BANFE-3", use: "Funciones ejecutivas (lóbulo frontal)" },
-  { name: "Escalas de Conners / CCI", use: "TDAH (niños y adultos)" },
-  { name: "SRS-2", use: "Autismo (respuesta social)" },
-  { name: "SHAPS", use: "Anhedonia" },
-  { name: "Test de Boston", use: "Diagnóstico de afasias" },
-  { name: "NPI (Inv. Neuropsiquiátrico)", use: "Síntomas conductuales, con informante" },
-  { name: "MNA", use: "Tamizaje nutricional" },
-  { name: "West Haven", use: "Estadificación de encefalopatía hepática" },
-];
-
-// Fichero de síndromes recurrentes (una línea por síndrome).
-const SYNDROME_FILE = [
-  { name: "Síndrome de Capgras", desc: "Reconoce el rostro pero no siente la familiaridad → cree que es un impostor (desconexión fusiforme-amígdala)." },
-  { name: "Prosopagnosia", desc: "Incapacidad de reconocer rostros familiares (no confundir con Capgras, donde sí los reconoce)." },
-  { name: "Síndrome de Anton", desc: "Ceguera cortical con negación del déficit (anosognosia visual)." },
-  { name: "Negligencia espacial", desc: "Ignora un hemicampo tras lesión parietal derecha." },
-  { name: "Amnesia anterógrada", desc: "No consolida nuevos recuerdos (lesión bilateral del hipocampo / temporal medial)." },
-  { name: "Síndrome de la mano ajena", desc: "Movimientos con propósito sin sensación de control (lesión callosa / área motora suplementaria)." },
-  { name: "Crisis de ausencia", desc: "Desconexiones súbitas de segundos con fijación de la mirada (epilepsia)." },
-  { name: "TOC", desc: "Conductas repetitivas no inhibibles (hiperactivación del circuito córtico-estriado-tálamo-cortical)." },
-  { name: "Encefalopatía de Hashimoto", desc: "Confusión fluctuante con mioclonías y anticuerpos antitiroideos elevados (autoinmune)." },
-  { name: "T. Neurocognitivo vascular vs Alzheimer", desc: "Vascular: avanza 'en escalones', golpea velocidad/ejecutivo. Alzheimer: gradual, la memoria primero." },
-];
-
 // Mini-examen por capas: 3 rondas de emparejar. Se empareja por `id`.
 const EXAM_ROUNDS = [
   {
@@ -3183,15 +3153,15 @@ export default function NeuroDetectiveRDoC() {
               Cada expediente te pide razonar en <span className="text-cyan-400">5 capas</span>. Así se ven encadenadas en un caso real:
             </p>
             <div className="bg-slate-800/50 rounded-lg px-3 py-2.5 mb-3 text-sm text-slate-300 italic">
-              "Un paciente reconoce el rostro de su esposa, pero no siente que sea ella — dice que es una impostora idéntica."
+              "Tras un infarto cerebral, un paciente habla con fluidez pero sus frases no tienen sentido, y tampoco comprende lo que se le dice."
             </div>
             <div className="space-y-2">
               {[
-                { k: "Síndrome", v: "S. de Capgras (desconexión fusiforme-amígdala)" },
-                { k: "Dominio", v: "Procesos Sociales" },
-                { k: "Constructo", v: "Percepción y comprensión del otro" },
-                { k: "Unidad", v: "Circuitos" },
-                { k: "Instrumento", v: "Eval. neuropsicológica + neuroimagen del ACV" },
+                { k: "Síndrome", v: "Afasia de Wernicke (lesión temporal posterior izquierda)" },
+                { k: "Dominio", v: "Sistemas Cognitivos" },
+                { k: "Constructo", v: "Lenguaje (comprensión)" },
+                { k: "Unidad", v: "Conducta (habla y comprensión observadas)" },
+                { k: "Instrumento", v: "Evaluación formal del lenguaje" },
               ].map(row => (
                 <div key={row.k} className="flex gap-2 items-start">
                   <span className="text-cyan-300 font-bold text-xs w-20 flex-shrink-0">{row.k}</span>
@@ -3232,38 +3202,6 @@ export default function NeuroDetectiveRDoC() {
                     <span className="text-amber-300">{d.b}</span>
                   </p>
                   <p className="text-slate-400 text-[11px] leading-relaxed">{d.rule}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        )
-      },
-      {
-        title: "Mapa de instrumentos",
-        content: (
-          <div>
-            <p className="text-slate-400 text-xs mb-3">Qué mide cada uno y a quién. Ojo con el rango de edad — es el error más común:</p>
-            <div className="space-y-1.5">
-              {INSTRUMENTS.map(ins => (
-                <div key={ins.name} className="flex gap-2 items-baseline bg-slate-800/50 rounded-lg px-3 py-1.5">
-                  <span className="text-purple-300 font-bold text-xs flex-shrink-0 w-32">{ins.name}</span>
-                  <span className="text-slate-400 text-[11px]">{ins.use}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )
-      },
-      {
-        title: "Fichero de síndromes",
-        content: (
-          <div>
-            <p className="text-slate-400 text-xs mb-3">Referencia rápida de los cuadros que más se repiten en los expedientes:</p>
-            <div className="space-y-2">
-              {SYNDROME_FILE.map(s => (
-                <div key={s.name} className="bg-slate-800/50 rounded-lg px-3 py-2">
-                  <span className="text-rose-300 font-bold text-xs">{s.name}</span>
-                  <p className="text-slate-400 text-[11px] mt-0.5 leading-relaxed">{s.desc}</p>
                 </div>
               ))}
             </div>
