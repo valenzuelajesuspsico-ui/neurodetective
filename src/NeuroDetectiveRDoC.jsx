@@ -893,7 +893,7 @@ const CASES = [
     intro: "Niño de 10 años es referido por su maestra debido a dificultades para integrarse con sus compañeros, aunque académicamente es uno de los mejores de su grupo.",
     interview: [
       { q: "¿Cómo es su lenguaje y vocabulario?", reveal: "Su lenguaje es muy elaborado para su edad, con vocabulario amplio y formal — habla 'como adulto' sobre sus temas de interés." },
-      { q: "¿Cómo interactúa socialmente con sus compañeros?", reveal: "Le cuesta entender las bromas, el sarcasmo y las reglas no escritas de la convivencia; prefiere hablar extensamente de sus temas de interés sin notar si el otro está aburrido." },
+      { q: "¿Cómo interactúa socialmente con sus compañeros?", reveal: "Le cuesta entender las bromas, el sarcasmo y las reglas no escritas de la convivencia; prefiere hablar extensamente de sus temas de interés sin notar si el otro está aburrido. Sus padres confirman que estas características están presentes desde que era muy pequeño, no aparecieron de golpe." },
       { q: "¿Hay intereses o rutinas particulares?", reveal: "Tiene un interés muy intenso y específico (por ejemplo, trenes o mapas) sobre el que puede hablar durante horas, y se altera si se interrumpe su rutina habitual." },
     ],
     questions: [
@@ -1105,7 +1105,7 @@ const CASES = [
     interview: [
       { q: "¿Cómo es su perfil de aprendizaje según los maestros?", reveal: "Aprende mejor con apoyos visuales y repetición; tiene más dificultad con conceptos abstractos y con el lenguaje expresivo que con la comprensión de instrucciones simples." },
       { q: "¿Cómo es su desarrollo social?", reveal: "Es muy sociable, busca interactuar con sus compañeros y disfruta las actividades grupales, aunque su lenguaje expresivo es limitado para su edad." },
-      { q: "¿Qué busca la familia con esta evaluación?", reveal: "Quieren un perfil actualizado de fortalezas y áreas de apoyo para ajustar su plan educativo individualizado del próximo ciclo escolar." },
+      { q: "¿Qué busca la familia con esta evaluación?", reveal: "Quieren un perfil actualizado de fortalezas y áreas de apoyo para ajustar su plan educativo individualizado del próximo ciclo escolar, entendiendo que su perfil va cambiando conforme crece y no es algo fijo." },
     ],
     questions: [
       {
