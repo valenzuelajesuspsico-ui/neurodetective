@@ -152,8 +152,8 @@ const READINESS_CHECK = {
   ],
 };
 
-const BASE_POINTS = { sindrome: 100, dominio: 100, constructo: 150, unidad: 150, instrumento: 100 };
-const QTYPE_LABEL = { sindrome: "Diagnóstico clínico", dominio: "Dominio RDoC", constructo: "Constructo RDoC", unidad: "Unidad de análisis", instrumento: "Instrumento de evaluación" };
+const BASE_POINTS = { sindrome: 100, dominio: 100, constructo: 150, unidad: 150, instrumento: 100, contexto: 100 };
+const QTYPE_LABEL = { sindrome: "Diagnóstico clínico", dominio: "Dominio RDoC", constructo: "Constructo RDoC", unidad: "Unidad de análisis", instrumento: "Instrumento de evaluación", contexto: "Neurodesarrollo / Ambiente" };
 const LEVEL_LABEL = { 1: "Nivel 1 · Básico", 2: "Nivel 2 · Intermedio", 3: "Nivel 3 · Avanzado" };
 const SYNTHESIS_BONUS = 50;
 const REPORT_BONUS = 30;
@@ -950,6 +950,14 @@ const CASES = [
           { text: "Test de Stroop", correct: false, feedback: "El Stroop evalúa control inhibitorio/atención selectiva, no el perfil de comunicación social que se necesita caracterizar aquí." },
           { text: "Escala de Depresión Geriátrica de Yesavage", correct: false, feedback: "Esta escala está diseñada para tamizaje afectivo en adultos mayores, no aplica a un niño ni al perfil que se busca evaluar." },
         ]
+      },
+      {
+        type: "contexto", prompt: "Más allá de la celda de la matriz, ¿qué dimensión transversal de RDoC es clave para leer este caso?",
+        options: [
+          { text: "Neurodesarrollo — es un perfil presente desde etapas tempranas, que se interpreta a lo largo de la trayectoria del desarrollo del niño.", correct: true, feedback: "Correcto. El TEA es del neurodesarrollo: su expresión y los apoyos que necesita dependen del momento evolutivo, no de un evento aislado." },
+          { text: "Ambiente — el cuadro se explica sobre todo por un factor de estrés reciente.", correct: false, feedback: "No hay un desencadenante ambiental agudo; el rasgo definitorio es su carácter del neurodesarrollo, presente desde la infancia." },
+          { text: "Ninguna — basta con ubicar el dominio y la unidad de análisis.", correct: false, feedback: "RDoC actual subraya que la celda no es plana: aquí el neurodesarrollo es esencial para el pronóstico y los apoyos." },
+        ]
       }
     ]
   },
@@ -1080,6 +1088,14 @@ const CASES = [
           { text: "SRS-2", correct: false, feedback: "La SRS-2 evalúa rasgos del espectro autista, no es relevante para este perfil predominantemente motor con cognición preservada." },
           { text: "Escalas de Conners", correct: false, feedback: "Las escalas de Conners se centran en síntomas de TDAH; no aportan información sobre el perfil intelectual que se necesita aquí." },
         ]
+      },
+      {
+        type: "contexto", prompt: "¿Qué dimensión transversal RDoC pesa más para interpretar y apoyar este caso?",
+        options: [
+          { text: "Neurodesarrollo — el compromiso motor está presente desde etapas tempranas y define su trayectoria, mientras la cognición sigue su propio curso.", correct: true, feedback: "Correcto. La parálisis cerebral parte de una lesión temprana; leer el perfil según el desarrollo evita confundir la limitación motora con un déficit cognitivo." },
+          { text: "Ambiente — el déficit responde a un estresor reciente.", correct: false, feedback: "No es un cambio reciente ni ambiental: es un cuadro del neurodesarrollo, presente desde etapas tempranas." },
+          { text: "Ninguna — con la unidad de análisis basta.", correct: false, feedback: "La celda no es plana: sin la mirada del neurodesarrollo se corre el riesgo de subestimar sus capacidades cognitivas preservadas." },
+        ]
       }
     ]
   },
@@ -1144,6 +1160,14 @@ const CASES = [
           { text: "ENI-2", correct: false, feedback: "El ENI-2 es una opción razonable para una evaluación neuropsicológica más amplia, pero para actualizar específicamente el perfil de fortalezas/debilidades de cara al plan educativo, el WISC-V con interpretación cualitativa es más directamente útil en este contexto." },
           { text: "SRS-2", correct: false, feedback: "La SRS-2 evalúa rasgos del espectro autista; el perfil social de la niña no sugiere ese patrón, por lo que no es el instrumento prioritario aquí." },
           { text: "Escala de Depresión Geriátrica de Yesavage", correct: false, feedback: "Esta escala está diseñada para adultos mayores; no aplica en absoluto a una niña de 9 años." },
+        ]
+      },
+      {
+        type: "contexto", prompt: "¿Cómo entra el neurodesarrollo al interpretar este perfil?",
+        options: [
+          { text: "El perfil de fortalezas y debilidades se lee a lo largo de su trayectoria de desarrollo para ajustar los apoyos, no como un déficit estático.", correct: true, feedback: "Correcto. El origen genético no fija el perfil funcional: cómo evoluciona y qué apoyos recibe a cada edad lo modula. Por eso la valoración es de seguimiento." },
+          { text: "No entra: el diagnóstico genético ya define todo el perfil funcional.", correct: false, feedback: "Tener Síndrome de Down no determina por sí solo el perfil cognitivo; su desarrollo y su contexto educativo lo moldean con el tiempo." },
+          { text: "Solo importa el ambiente escolar, no el desarrollo.", correct: false, feedback: "Ambiente y neurodesarrollo actúan juntos, pero aquí la clave es leer el perfil según la trayectoria evolutiva de la niña." },
         ]
       }
     ]
@@ -1210,6 +1234,14 @@ const CASES = [
           { text: "SRS-2", correct: false, feedback: "La SRS-2 evalúa rasgos del espectro autista, no síntomas de inatención/hiperactividad." },
           { text: "Test de Stroop únicamente", correct: false, feedback: "El Stroop aporta información sobre control inhibitorio, pero por sí solo no es suficiente para fundamentar un diagnóstico de TDAH; se usa como complemento, no como instrumento principal." },
           { text: "Escala de Glasgow", correct: false, feedback: "La Escala de Glasgow mide nivel de conciencia tras un evento neurológico agudo; no es relevante para evaluar síntomas de TDAH." },
+        ]
+      },
+      {
+        type: "contexto", prompt: "¿Qué dimensión transversal es clave en el diagnóstico diferencial de este caso?",
+        options: [
+          { text: "Neurodesarrollo — los síntomas se rastrean de forma continua desde la infancia; esa trayectoria lo distingue de una ansiedad de aparición tardía.", correct: true, feedback: "Correcto. El TDAH es un trastorno del neurodesarrollo por definición: la continuidad desde la niñez es la clave diferencial frente a cuadros de inicio adulto." },
+          { text: "Ambiente — es una reacción a un estresor laboral actual.", correct: false, feedback: "Aunque el estrés actual influya, lo definitorio es la continuidad de los síntomas desde la infancia (neurodesarrollo)." },
+          { text: "Ninguna — el TDAH no tiene relación con el desarrollo.", correct: false, feedback: "Al contrario: el TDAH es, por definición, un trastorno del neurodesarrollo." },
         ]
       }
     ]
@@ -1731,6 +1763,14 @@ const CASES = [
           { text: "WISC-V", correct: false, feedback: "El WISC-V es para población infantil/adolescente; no aplica a esta paciente de 81 años." },
           { text: "BANFE-3 completo", correct: false, feedback: "Una batería extensa de funciones ejecutivas no es la prioridad inicial en un cuadro donde primero debe documentarse y atenderse el estado nutricional." },
           { text: "Inventario Neuropsiquiátrico (NPI)", correct: false, feedback: "El NPI evalúa síntomas conductuales y psicológicos en el contexto de demencias ya establecidas; en este caso aún se está documentando si el cuadro es nutricional y potencialmente reversible." },
+        ]
+      },
+      {
+        type: "contexto", prompt: "¿Qué dimensión transversal RDoC resulta decisiva aquí?",
+        options: [
+          { text: "Ambiente — un factor nutricional del contexto está produciendo el deterioro, y corregirlo puede revertirlo.", correct: true, feedback: "Correcto. Reconocer la dimensión ambiental (nutrición) es lo que abre la puerta a un tratamiento que revierta el deterioro." },
+          { text: "Neurodesarrollo — es un patrón presente desde la infancia.", correct: false, feedback: "No: es un cambio adquirido en la vejez, ligado al contexto nutricional, no a la trayectoria del desarrollo." },
+          { text: "Ninguna — el deterioro cognitivo se explica solo por la edad.", correct: false, feedback: "Atribuirlo solo a la edad haría perder una causa ambiental tratable y potencialmente reversible." },
         ]
       }
     ]
@@ -2558,6 +2598,7 @@ export default function NeuroDetectiveRDoC() {
   const [statsByType, setStatsByType] = useState({
     sindrome: { correct: 0, total: 0 }, dominio: { correct: 0, total: 0 },
     constructo: { correct: 0, total: 0 }, unidad: { correct: 0, total: 0 }, instrumento: { correct: 0, total: 0 },
+    contexto: { correct: 0, total: 0 },
   });
   const [revealed, setRevealed] = useState(new Set());
   const [interviewDone, setInterviewDone] = useState(false);
@@ -2727,6 +2768,7 @@ export default function NeuroDetectiveRDoC() {
     setStatsByType({
       sindrome: { correct: 0, total: 0 }, dominio: { correct: 0, total: 0 },
       constructo: { correct: 0, total: 0 }, unidad: { correct: 0, total: 0 }, instrumento: { correct: 0, total: 0 },
+      contexto: { correct: 0, total: 0 },
     });
     setSynthesisIndex(0); setSynthesisSelected(null); setSynthesisShowFeedback(false);
     setFunBanner(null);
@@ -4074,6 +4116,7 @@ export default function NeuroDetectiveRDoC() {
               <CompetencyBar label="Diagnóstico diferencial" obj={statsByType.sindrome} />
               <CompetencyBar label="Clasificación RDoC (dominio/constructo/unidad)" obj={rdocCombined} />
               <CompetencyBar label="Selección de instrumentos" obj={statsByType.instrumento} />
+              <CompetencyBar label="Dimensión transversal (neurodesarrollo/ambiente)" obj={statsByType.contexto} />
             </div>
           </div>
 
