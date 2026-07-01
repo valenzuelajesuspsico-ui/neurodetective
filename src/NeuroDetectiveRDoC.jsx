@@ -2052,6 +2052,39 @@ const STUDY_CASES = [
       ]},
     ]
   },
+  {
+    // Caso comparativo: mismo diagnóstico DSM, distinto perfil RDoC.
+    // (Basado en las viñetas de Trastorno de Conducta de Cozza et al., "RDoC and Clinical Child Psychology".)
+    domainKey: "VN",
+    comparative: true,
+    dx: "Trastorno de Conducta (mismo diagnóstico DSM-5)",
+    patients: [
+      { label: "Paciente 1", text: "16 años, con ansiedad entre sus familiares. Robó presionado por sus amigos, falta a clases 'porque ellos faltan' y pelea diciendo que lo provocaron. Sus actos son reactivos y los justifica." },
+      { label: "Paciente 2", text: "16 años, con negligencia severa en la infancia. Robó sin justificarlo, no considera importante asistir a clases e inicia peleas sin ofrecer ningún motivo ni mostrar remordimiento." },
+    ],
+    questions: [
+      { type: "sindrome", label: "Comparación", prompt: "Ambos cumplen los mismos criterios de Trastorno de Conducta (DSM). ¿Comparten el mismo perfil RDoC?", options: [
+        { text: "No — la misma conducta esconde mecanismos distintos en cada uno", correct: true, feedback: "Correcto. Esta es la idea central de RDoC: dos personas con la misma etiqueta DSM pueden diferir por completo en el mecanismo subyacente, y eso cambia el abordaje." },
+        { text: "Sí — si cumplen los mismos criterios, el perfil es el mismo", correct: false, feedback: "No. Cumplir los mismos criterios DSM no implica el mismo mecanismo; RDoC mira por debajo del síntoma observable." },
+        { text: "No se puede saber sin un estudio genético", correct: false, feedback: "No hace falta genética: la propia historia y conducta de cada paciente ya revelan perfiles de amenaza opuestos." },
+      ]},
+      { type: "constructo", label: "Perfil · Paciente 1", prompt: "¿Qué constructo predomina en el Paciente 1 (reactivo, con ansiedad familiar)?", options: [
+        { text: "Amenaza aguda hiper-reactiva (Valencia Negativa)", correct: true, feedback: "Correcto. Su conducta es reactiva y defensiva ('me provocaron'), con carga ansiosa: un sistema de amenaza hiperactivo." },
+        { text: "Miedo hipo-reactivo / rasgos insensibles", correct: false, feedback: "Ese es el perfil del Paciente 2. El 1 reacciona con ansiedad, no con insensibilidad." },
+        { text: "Respuesta a la recompensa exagerada", correct: false, feedback: "No es un problema de recompensa; el núcleo es cómo procesa la amenaza." },
+      ]},
+      { type: "constructo", label: "Perfil · Paciente 2", prompt: "¿Qué constructo predomina en el Paciente 2 (negligencia, sin remordimiento)?", options: [
+        { text: "Miedo hipo-reactivo / rasgos insensibles (tras negligencia)", correct: true, feedback: "Correcto. Inicia la agresión sin justificación ni remordimiento: un sistema de amenaza hipoactivo, con rasgos insensibles." },
+        { text: "Amenaza aguda hiper-reactiva", correct: false, feedback: "Ese es el perfil del Paciente 1. El 2 actúa sin miedo ni justificación." },
+        { text: "Ansiedad sostenida", correct: false, feedback: "No hay anticipación ansiosa del peligro; al contrario, hay una respuesta de amenaza disminuida." },
+      ]},
+      { type: "instrumento", label: "Implicación clínica", prompt: "¿Qué implica esta diferencia de perfil para el abordaje?", options: [
+        { text: "Distinto blanco terapéutico para cada uno, pese al mismo diagnóstico", correct: true, feedback: "Correcto. El Paciente 1 podría beneficiarse de regular la ansiedad/amenaza; el Paciente 2 requiere otro enfoque (vínculo, aprendizaje socioemocional). Mismo Dx, distinto tratamiento." },
+        { text: "El mismo tratamiento estándar de Trastorno de Conducta para ambos", correct: false, feedback: "Justamente lo que RDoC cuestiona: tratar igual mecanismos distintos suele fallar en uno de los dos." },
+        { text: "Ninguna: el diagnóstico DSM ya define todo el plan", correct: false, feedback: "El diagnóstico DSM agrupa la conducta, pero el mecanismo RDoC es el que orienta un abordaje a la medida." },
+      ]},
+    ]
+  },
 ];
 // Modo Supervisión: encuentra el error en el informe de un colega ficticio (reutiliza confusiones ya enseñadas).
 const SUPERVISION_CASES = [
@@ -2235,7 +2268,9 @@ function buildReportData(caseObj) {
 const MAX_SCORE = CASES.reduce((sum, c) => sum + c.questions.reduce((s, q) => s + BASE_POINTS[q.type], 0), 0);
 const TOTAL_MAX = MAX_SCORE + SYNTHESIS_BONUS * SYNTHESIS_CASES.length + REPORT_BONUS * CASES.length;
 const MAX_CELLS = new Set(CASES.filter(c => c.domainKey && c.unitKey).map(c => `${c.domainKey}-${c.unitKey}`)).size;
-const STUDY_TOTAL = STUDY_CASES.length * 4;
+// Lista plana de pasos (caso, pregunta) para permitir distinto número de preguntas por caso.
+const STUDY_STEPS = STUDY_CASES.flatMap((c, ci) => c.questions.map((_, qi) => [ci, qi]));
+const STUDY_TOTAL = STUDY_STEPS.length;
 
 function getRank(pct) {
   if (pct >= 85) return { label: "Maestro Neuropsicólogo RDoC", emoji: "🏆" };
@@ -2892,8 +2927,7 @@ export default function NeuroDetectiveRDoC() {
   }
 
   // --- handlers modo estudio ---
-  const studyCaseIdx = Math.floor(studyPos / 4);
-  const studyQIdx = studyPos % 4;
+  const [studyCaseIdx, studyQIdx] = STUDY_STEPS[studyPos];
   const currentStudyCase = STUDY_CASES[studyCaseIdx];
   const currentStudyQuestion = currentStudyCase ? currentStudyCase.questions[studyQIdx] : null;
 
@@ -3005,8 +3039,8 @@ export default function NeuroDetectiveRDoC() {
               <h3 className="text-white font-semibold text-sm">Modo Estudio</h3>
             </div>
             <p className="text-slate-400 text-xs leading-relaxed">
-              6 casos nuevos — uno por cada dominio RDoC — distintos a los del modo juego. Sin puntaje ni
-              penalizaciones, navega libremente con anterior/siguiente.
+              7 casos nuevos — uno por cada dominio RDoC más un caso comparativo (mismo diagnóstico, distinto
+              perfil) — distintos a los del modo juego. Sin puntaje ni penalizaciones, navega libremente.
             </p>
             <button
               onClick={handleStartStudy}
@@ -4155,7 +4189,7 @@ export default function NeuroDetectiveRDoC() {
           </div>
 
           <div className="flex gap-1.5 mb-4">
-            {[0, 1, 2, 3].map(i => (
+            {currentStudyCase.questions.map((_, i) => (
               <div key={i} className={`h-1.5 flex-1 rounded-full transition-colors ${
                 i < studyQIdx ? "bg-purple-400" : i === studyQIdx ? "bg-purple-400/50" : "bg-slate-700"
               }`} />
@@ -4166,11 +4200,25 @@ export default function NeuroDetectiveRDoC() {
             <div className="flex items-center gap-2 mb-3">
               <BookOpen className="w-4 h-4 text-purple-400" />
               <span className="text-xs font-mono text-slate-500">CASO DE ESTUDIO #{String(studyCaseIdx + 1).padStart(2, "0")}</span>
-              <span className="text-[10px] text-purple-300 bg-purple-500/10 px-2 py-0.5 rounded-full ml-auto">Enfocado en: {domainLabel}</span>
+              <span className="text-[10px] text-purple-300 bg-purple-500/10 px-2 py-0.5 rounded-full ml-auto">{currentStudyCase.comparative ? "Caso comparativo" : `Enfocado en: ${domainLabel}`}</span>
             </div>
-            <p className="text-slate-200 leading-relaxed mb-5">{currentStudyCase.vignette}</p>
+            {currentStudyCase.comparative ? (
+              <div className="mb-5">
+                <div className="inline-block mb-3 text-[11px] font-bold text-purple-300 bg-purple-500/10 px-2.5 py-1 rounded-full">{currentStudyCase.dx}</div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {currentStudyCase.patients.map(pt => (
+                    <div key={pt.label} className="bg-slate-800/50 rounded-lg px-3 py-2.5 border border-slate-700/60">
+                      <p className="text-cyan-200 font-bold text-xs mb-1">{pt.label}</p>
+                      <p className="text-slate-300 text-[11px] leading-relaxed">{pt.text}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <p className="text-slate-200 leading-relaxed mb-5">{currentStudyCase.vignette}</p>
+            )}
 
-            <span className="text-[11px] font-bold uppercase tracking-wide text-purple-400">{QTYPE_LABEL[currentStudyQuestion.type]}</span>
+            <span className="text-[11px] font-bold uppercase tracking-wide text-purple-400">{currentStudyQuestion.label || QTYPE_LABEL[currentStudyQuestion.type]}</span>
             <p className="text-white font-medium mt-1 mb-4">{currentStudyQuestion.prompt}</p>
 
             <div className="space-y-2">
