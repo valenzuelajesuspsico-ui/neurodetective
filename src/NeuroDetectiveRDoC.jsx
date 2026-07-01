@@ -1,5 +1,59 @@
-import { useState, Fragment } from "react";
-import { Brain, Lightbulb, CheckCircle2, XCircle, ChevronRight, ChevronLeft, RotateCcw, Flame, LayoutGrid, Sparkles, BookOpen, Gamepad2, X, HelpCircle, GitCompare, Heart, ClipboardList, GraduationCap, FolderOpen, Lock, Home, FileText, Search, Calendar, BarChart3 } from "lucide-react";
+import { useState, useEffect, Fragment } from "react";
+import { Brain, Lightbulb, CheckCircle2, XCircle, ChevronRight, ChevronLeft, RotateCcw, Flame, LayoutGrid, Sparkles, BookOpen, Gamepad2, X, HelpCircle, GitCompare, Heart, ClipboardList, GraduationCap, FolderOpen, Lock, Home, FileText, Search, Calendar, BarChart3, Volume2, VolumeX } from "lucide-react";
+
+// ===== Motor de sonido (Web Audio API, sintetizado — sin archivos) =====
+const SFX = (() => {
+  let ctx = null, enabled = false;
+  const ac = () => { if (!ctx) { const AC = window.AudioContext || window.webkitAudioContext; if (AC) ctx = new AC(); } return ctx; };
+  function tone(freq, dur, type = "sine", gain = 0.14, slideTo = null) {
+    if (!enabled) return; const c = ac(); if (!c) return; const t = c.currentTime;
+    const o = c.createOscillator(), g = c.createGain();
+    o.type = type; o.frequency.setValueAtTime(freq, t);
+    if (slideTo) o.frequency.exponentialRampToValueAtTime(slideTo, t + dur);
+    g.gain.setValueAtTime(gain, t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g).connect(c.destination); o.start(t); o.stop(t + dur);
+  }
+  function swish(dur = 0.3) {
+    if (!enabled) return; const c = ac(); if (!c) return; const t = c.currentTime;
+    const buf = c.createBuffer(1, Math.floor(c.sampleRate * dur), c.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / d.length);
+    const src = c.createBufferSource(); src.buffer = buf;
+    const bp = c.createBiquadFilter(); bp.type = "bandpass";
+    bp.frequency.setValueAtTime(1400, t); bp.frequency.exponentialRampToValueAtTime(450, t + dur);
+    const g = c.createGain(); g.gain.setValueAtTime(0.22, t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    src.connect(bp).connect(g).connect(c.destination); src.start(t); src.stop(t + dur);
+  }
+  return {
+    setEnabled(v) { enabled = v; if (v) { const c = ac(); if (c && c.state === "suspended") c.resume(); } },
+    isEnabled: () => enabled,
+    pageTurn: () => swish(0.3),
+    correct() { tone(523.25, 0.12, "sine", 0.15); setTimeout(() => tone(783.99, 0.16, "sine", 0.14), 85); },
+    wrong() { tone(180, 0.26, "sawtooth", 0.12, 110); },
+    streak() { [523, 659, 784, 1047].forEach((f, i) => setTimeout(() => tone(f, 0.14, "triangle", 0.13), i * 65)); },
+    stamp() { swish(0.08); tone(95, 0.15, "square", 0.2); },
+    click() { tone(660, 0.04, "sine", 0.05); },
+  };
+})();
+
+const NO_MOTION = typeof window !== "undefined" && window.matchMedia
+  ? window.matchMedia("(prefers-reduced-motion: reduce)").matches : false;
+
+const vibrate = (pattern) => { try { if (navigator.vibrate) navigator.vibrate(pattern); } catch { /* no-op */ } };
+
+// Revela un texto letra por letra (respeta prefers-reduced-motion).
+function Typewriter({ text, speed = 16 }) {
+  const [n, setN] = useState(NO_MOTION ? text.length : 0);
+  useEffect(() => {
+    if (NO_MOTION) { setN(text.length); return; }
+    setN(0);
+    let i = 0;
+    const id = setInterval(() => { i += 1; setN(i); if (i >= text.length) clearInterval(id); }, speed);
+    return () => clearInterval(id);
+  }, [text, speed]);
+  const done = n >= text.length;
+  return <span className={done ? "" : "nd-caret"}>{text.slice(0, n)}</span>;
+}
 
 const DOMAIN_DESCRIPTIONS = {
   VN: "Procesos relacionados con el miedo, la ansiedad y la respuesta a la pérdida.",
@@ -2574,6 +2628,18 @@ function FunBanner({ text }) {
 export default function NeuroDetectiveRDoC() {
   const [screen, setScreen] = useState("start");
 
+  // --- efectos de experiencia: sonido + puntos flotantes ---
+  const [soundOn, setSoundOn] = useState(false);
+  const [pointsFx, setPointsFx] = useState(null); // { amount, id }
+  function toggleSound() {
+    setSoundOn(prev => {
+      const next = !prev;
+      SFX.setEnabled(next);
+      if (next) SFX.click();
+      return next;
+    });
+  }
+
   // --- perfil del jugador (solo durante la sesión) ---
   const [playerName, setPlayerName] = useState("");
   const [playerLastName, setPlayerLastName] = useState("");
@@ -2814,14 +2880,20 @@ export default function NeuroDetectiveRDoC() {
     if (option.correct) {
       const newStreak = streak + 1;
       const mult = newStreak >= 3 ? 1.5 : 1;
-      setScore(s => s + Math.round(BASE_POINTS[currentQuestion.type] * mult));
+      const gained = Math.round(BASE_POINTS[currentQuestion.type] * mult);
+      setScore(s => s + gained);
       setStreak(newStreak);
       setMustReconsult(false);
-      if (newStreak === 3) setFunBanner(pickRandom(STREAK3_PHRASES));
-      else if (newStreak === 5) setFunBanner(pickRandom(STREAK5_PHRASES));
+      setPointsFx({ amount: gained, id: Math.random() });
+      SFX.correct();
+      vibrate(25);
+      if (newStreak === 3) { setFunBanner(pickRandom(STREAK3_PHRASES)); SFX.streak(); vibrate([20, 40, 20]); }
+      else if (newStreak === 5) { setFunBanner(pickRandom(STREAK5_PHRASES)); SFX.streak(); }
       else setFunBanner(null);
     } else {
       setStreak(0);
+      SFX.wrong();
+      vibrate([55, 30, 55]);
       const newTrust = Math.max(0, trust - 1);
       setTrust(newTrust);
       if (newTrust === 0 && !caseLostTrust) {
@@ -2856,6 +2928,7 @@ export default function NeuroDetectiveRDoC() {
   }
 
   function handleNext() {
+    SFX.pageTurn();
     if (mustReconsult) {
       setMustReconsult(false);
       setSelected(null); setShowFeedback(false); setRemovedIdx(null); setHintUsed(false);
@@ -2928,13 +3001,15 @@ export default function NeuroDetectiveRDoC() {
     if (reportData.bank[bankIdx] === correctAnswer) {
       setReportFilledTypes(prev => {
         const next = new Set(prev).add(type);
-        if (next.size === reportData.blanks.length) setScore(s => s + REPORT_BONUS);
+        if (next.size === reportData.blanks.length) { setScore(s => s + REPORT_BONUS); SFX.stamp(); vibrate([30, 40, 60]); }
+        else SFX.click();
         return next;
       });
       setReportUsedBankIdx(prev => new Set(prev).add(bankIdx));
       setReportSelectedType(null);
       setReportSelectedBankIdx(null);
     } else {
+      SFX.wrong();
       setReportWrongFlash(true);
       setTimeout(() => {
         setReportWrongFlash(false);
@@ -3002,8 +3077,8 @@ export default function NeuroDetectiveRDoC() {
 
   if (screen === "start") {
     return (
-      <div className="min-h-screen w-full bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-900 flex items-center justify-center p-6">
-        <div className="max-w-xl w-full bg-slate-900/60 border border-indigo-500/30 rounded-2xl p-8 shadow-2xl backdrop-blur">
+      <div className="min-h-screen w-full bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-900 nd-bg-animated flex items-center justify-center p-6">
+        <div className="nd-card-in max-w-xl w-full bg-slate-900/60 border border-indigo-500/30 rounded-2xl p-8 shadow-2xl backdrop-blur">
           <div className="flex items-center gap-3 mb-2">
             <div className="bg-cyan-500/20 p-3 rounded-xl">
               <Brain className="w-8 h-8 text-cyan-400" />
@@ -3012,6 +3087,9 @@ export default function NeuroDetectiveRDoC() {
               <h1 className="text-2xl font-bold text-white">Neuro Detective</h1>
               <p className="text-cyan-400 text-sm font-medium">Edición RDoC</p>
             </div>
+            <button onClick={toggleSound} title={soundOn ? "Silenciar" : "Activar sonido"} className="ml-auto text-slate-400 hover:text-cyan-300 bg-slate-800/60 rounded-lg p-2">
+              {soundOn ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
+            </button>
           </div>
           <p className="text-slate-300 mt-4 leading-relaxed">
             Entrevista a tus pacientes, clasifica la evidencia en la matriz y conecta los casos entre sí —
@@ -4400,7 +4478,7 @@ export default function NeuroDetectiveRDoC() {
                 return (
                   <div key={i}>
                     <button
-                      onClick={() => setRevealed(prev => new Set(prev).add(i))}
+                      onClick={() => { SFX.click(); setRevealed(prev => new Set(prev).add(i)); }}
                       disabled={isRevealed}
                       className={`w-full text-left px-4 py-3 rounded-xl border transition-all text-sm flex items-center justify-between gap-2 ${
                         isRevealed ? "border-cyan-500/40 bg-cyan-500/10 text-cyan-100" : "border-slate-700 bg-slate-800/50 hover:bg-slate-800 hover:border-slate-600 text-slate-100"
@@ -4410,7 +4488,7 @@ export default function NeuroDetectiveRDoC() {
                       {isRevealed ? <CheckCircle2 className="w-4 h-4 text-cyan-400 flex-shrink-0" /> : <HelpCircle className="w-4 h-4 text-slate-500 flex-shrink-0" />}
                     </button>
                     {isRevealed && (
-                      <div className="mt-1.5 ml-2 pl-3 border-l-2 border-cyan-500/30 text-slate-300 text-sm py-1">{item.reveal}</div>
+                      <div className="nd-page-in mt-1.5 ml-2 pl-3 border-l-2 border-cyan-500/30 text-slate-300 text-sm py-1"><Typewriter text={item.reveal} /></div>
                     )}
                   </div>
                 );
@@ -4504,7 +4582,8 @@ export default function NeuroDetectiveRDoC() {
                 </div>
               </>
             ) : (
-              <div className="mt-2 bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-4 text-center">
+              <div className="relative mt-2 bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-4 text-center overflow-hidden">
+                <span className="nd-stamp pointer-events-none absolute top-2 right-2 text-emerald-400/70 border-2 border-emerald-400/60 rounded-md px-2 py-0.5 text-[10px] font-black uppercase tracking-widest">Completado</span>
                 <p className="text-emerald-300 font-bold text-sm">✅ Informe completado (+{REPORT_BONUS} pts)</p>
                 {playerName.trim() && (() => {
                   const cr = getClinicalRank(prestige);
@@ -4598,17 +4677,31 @@ export default function NeuroDetectiveRDoC() {
   const isGrid = currentQuestion.type === "dominio" || currentQuestion.type === "unidad";
 
   return (
-    <div className="min-h-screen w-full bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-900 p-4 sm:p-6">
+    <div className="min-h-screen w-full bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-900 nd-bg-animated p-4 sm:p-6">
       <div className="max-w-2xl mx-auto">
         <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
           <span className="text-xs font-bold text-cyan-400 bg-cyan-500/10 px-3 py-1.5 rounded-full">{LEVEL_LABEL[currentCase.level]}</span>
           <div className="flex items-center gap-3 text-sm">
-            <span className="flex items-center gap-1 text-amber-400 font-bold"><Sparkles className="w-4 h-4" /> {score} pts</span>
+            <span className="relative flex items-center gap-1 text-amber-400 font-bold">
+              <Sparkles className="w-4 h-4" /> {score} pts
+              {pointsFx && (
+                <span
+                  key={pointsFx.id}
+                  onAnimationEnd={() => setPointsFx(null)}
+                  className="nd-float pointer-events-none absolute -top-4 right-0 text-emerald-400 font-bold text-sm"
+                >
+                  +{pointsFx.amount}
+                </span>
+              )}
+            </span>
             {streak >= 2 && (
               <span className={`flex items-center gap-1 font-bold ${streak >= 3 ? "text-orange-400" : "text-slate-400"}`}>
-                <Flame className="w-4 h-4" /> {streak}{streak >= 3 ? " ×1.5" : ""}
+                <Flame key={streak} className={`w-4 h-4 ${streak >= 3 ? "nd-flame" : ""}`} /> {streak}{streak >= 3 ? " ×1.5" : ""}
               </span>
             )}
+            <button onClick={toggleSound} title={soundOn ? "Silenciar" : "Activar sonido"} className="text-slate-500 hover:text-slate-300">
+              {soundOn ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+            </button>
             <button onClick={goLobby} className="text-slate-500 hover:text-slate-300 flex items-center gap-1 text-xs"><X className="w-3.5 h-3.5" /></button>
           </div>
         </div>
@@ -4623,7 +4716,7 @@ export default function NeuroDetectiveRDoC() {
           ))}
         </div>
 
-        <div className="bg-slate-900/60 border border-indigo-500/30 rounded-2xl p-6 shadow-2xl backdrop-blur">
+        <div key={questionIndex} className="nd-page-in bg-slate-900/60 border border-indigo-500/30 rounded-2xl p-6 shadow-2xl backdrop-blur">
           <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
             <div className="flex items-center gap-2">
               <Brain className="w-4 h-4 text-cyan-400" />
@@ -4694,7 +4787,7 @@ export default function NeuroDetectiveRDoC() {
           </div>
 
           {showFeedback && (
-            <div className={`mt-4 p-4 rounded-xl border ${selectedOption.correct ? "border-emerald-500/40 bg-emerald-500/10" : "border-red-500/40 bg-red-500/10"}`}>
+            <div className={`mt-4 p-4 rounded-xl border ${selectedOption.correct ? "border-emerald-500/40 bg-emerald-500/10 nd-correct" : "border-red-500/40 bg-red-500/10 nd-shake"}`}>
               <p className={`text-sm font-semibold mb-1 ${selectedOption.correct ? "text-emerald-300" : "text-red-300"}`}>{selectedOption.correct ? "¡Correcto!" : "No del todo..."}</p>
               <p className="text-slate-300 text-sm leading-relaxed">{selectedOption.feedback}</p>
 
