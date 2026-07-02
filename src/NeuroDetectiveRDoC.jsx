@@ -44,6 +44,7 @@ import {
   REVIEW_FIELDS,
   REVIEW_ACCENTS,
   REVIEW_LABEL_COLOR,
+  REFERENCES,
 } from "./data.js";
 
 
@@ -1171,6 +1172,22 @@ export default function NeuroDetectiveRDoC() {
                 );
               })}
             </div>
+          </div>
+        )
+      },
+      {
+        title: "Referencias",
+        content: (
+          <div>
+            <p className="text-slate-400 text-xs mb-3">Fuentes consultadas para el contenido de este curso (estilo Vancouver):</p>
+            <ol className="space-y-2">
+              {REFERENCES.map((ref, i) => (
+                <li key={i} className="flex gap-2 text-[11px] leading-relaxed text-slate-300">
+                  <span className="text-cyan-400 font-bold flex-shrink-0">{i + 1}.</span>
+                  <span>{ref}</span>
+                </li>
+              ))}
+            </ol>
           </div>
         )
       },

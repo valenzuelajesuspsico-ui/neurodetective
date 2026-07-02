@@ -2303,3 +2303,12 @@ export const REVIEW_LABEL_COLOR = {
   emerald: "text-emerald-300",
   orange: "text-orange-300",
 };
+
+// Fuentes consultadas para el contenido del curso (estilo Vancouver).
+export const REFERENCES = [
+  "Morris SE, Sanislow CA, Pacheco J, Vaidyanathan U, Gordon JA, Cuthbert BN. Revisiting the seven pillars of RDoC. BMC Med. 2022;20:220. doi:10.1186/s12916-022-02414-0.",
+  "Cozza E, Spring J, Nabb C, Shankman S. NIMH's Research Domain Criteria (RDoC) and clinical child psychology. En: Matson JL, editor. Handbook of Clinical Child Psychology. Cham: Springer; 2023. doi:10.1007/978-3-031-24926-6_6.",
+  "Arnett A, Fogler J. Clinical psychology in the era of Research Diagnostic Criteria (RDoC): reconciling individually-focused practice with a broader biopsychosocial context. Res Child Adolesc Psychopathol. 2024;52(4):487-9. doi:10.1007/s10802-024-01181-1.",
+  "Fung LK, Akil M, Widge A, Roberts LW, Etkin A. Attitudes toward neuroscience education among psychiatry residents and fellows. Acad Psychiatry. 2014;38(2):127-34. doi:10.1007/s40596-014-0034-x.",
+  "National Institute of Mental Health. Research Domain Criteria (RDoC) [Internet]. Bethesda (MD): NIMH. Disponible en: https://www.nimh.nih.gov/research/research-funded-by-nimh/rdoc",
+];
