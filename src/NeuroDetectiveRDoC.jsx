@@ -674,7 +674,7 @@ export default function NeuroDetectiveRDoC() {
 
   if (screen === "start") {
     return (
-      <div className="min-h-screen w-full bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-900 nd-bg-animated flex items-center justify-center p-6">
+      <div className="min-h-screen w-full nd-screen-in bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-900 nd-bg-animated flex items-center justify-center p-6">
         <div className="nd-card-in max-w-xl w-full bg-slate-900/60 border border-indigo-500/30 rounded-2xl p-8 shadow-2xl backdrop-blur">
           <div className="flex items-center gap-3 mb-2">
             <div className="bg-cyan-500/20 p-3 rounded-xl">
@@ -783,7 +783,7 @@ export default function NeuroDetectiveRDoC() {
   if (screen === "profile") {
     const ready = playerName.trim() && playerLastName.trim() && playerInstitution.trim();
     return (
-      <div className="min-h-screen w-full bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-900 flex items-center justify-center p-6">
+      <div className="min-h-screen w-full nd-screen-in bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-900 flex items-center justify-center p-6">
         <div className="max-w-md w-full bg-slate-900/60 border border-cyan-500/30 rounded-2xl p-8 shadow-2xl backdrop-blur">
           <div className="text-center mb-6">
             <div className="bg-cyan-500/20 w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-3">
@@ -1177,7 +1177,7 @@ export default function NeuroDetectiveRDoC() {
     ];
     const slide = slides[courseStep];
     return (
-      <div className="min-h-screen w-full bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-900 p-4 sm:p-6">
+      <div className="min-h-screen w-full nd-screen-in bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-900 p-4 sm:p-6">
         <div className="max-w-2xl mx-auto">
           <div className="flex items-center justify-between mb-4">
             <span className="text-xs font-bold text-cyan-300 bg-cyan-500/10 px-3 py-1.5 rounded-full flex items-center gap-1.5">
@@ -1194,7 +1194,7 @@ export default function NeuroDetectiveRDoC() {
               }`} />
             ))}
           </div>
-          <div className="bg-slate-900/60 border border-indigo-500/30 rounded-2xl p-6 shadow-2xl backdrop-blur min-h-[280px]">
+          <div key={courseStep} className="nd-page-in bg-slate-900/60 border border-indigo-500/30 rounded-2xl p-6 shadow-2xl backdrop-blur min-h-[280px]">
             <h2 className="text-xl font-bold text-white mb-4">{slide.title}</h2>
             {slide.content}
           </div>
@@ -1237,7 +1237,7 @@ export default function NeuroDetectiveRDoC() {
     }, 0);
     const total = READINESS_CHECK.questions.length;
     return (
-      <div className="min-h-screen w-full bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-900 p-4 sm:p-6">
+      <div className="min-h-screen w-full nd-screen-in bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-900 p-4 sm:p-6">
         <div className="max-w-2xl mx-auto">
           <div className="flex items-center justify-between mb-4">
             <span className="text-xs font-bold text-purple-300 bg-purple-500/10 px-3 py-1.5 rounded-full flex items-center gap-1.5">
@@ -1341,7 +1341,7 @@ export default function NeuroDetectiveRDoC() {
 
   if (screen === "expert") {
     return (
-      <div className="min-h-screen w-full bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-900 p-4 sm:p-6">
+      <div className="min-h-screen w-full nd-screen-in bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-900 p-4 sm:p-6">
         <div className="max-w-2xl mx-auto">
           <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
             <span className="text-xs font-bold text-yellow-300 bg-yellow-500/10 px-3 py-1.5 rounded-full flex items-center gap-1.5">
@@ -1519,7 +1519,7 @@ export default function NeuroDetectiveRDoC() {
     const supCase = SUPERVISION_CASES[supervisionPos];
 
     return (
-      <div className="min-h-screen w-full bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-900 p-4 sm:p-6">
+      <div className="min-h-screen w-full nd-screen-in bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-900 p-4 sm:p-6">
         <div className="max-w-2xl mx-auto">
           <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
             <span className="text-xs font-bold text-orange-300 bg-orange-500/10 px-3 py-1.5 rounded-full flex items-center gap-1.5">
@@ -1570,7 +1570,7 @@ export default function NeuroDetectiveRDoC() {
 
   if (screen === "supervision-end") {
     return (
-      <div className="min-h-screen w-full bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-900 flex items-center justify-center p-6">
+      <div className="min-h-screen w-full nd-screen-in bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-900 flex items-center justify-center p-6">
         <div className="max-w-md w-full bg-slate-900/60 border border-orange-500/30 rounded-2xl p-8 shadow-2xl backdrop-blur text-center">
           <div className="text-5xl mb-3">🕵️</div>
           <h2 className="text-xl font-bold text-white">Supervisión completada</h2>
@@ -1597,7 +1597,7 @@ export default function NeuroDetectiveRDoC() {
     CASES.forEach((c, i) => groups[c.grupo || "Casos RDoC"].push(i));
 
     return (
-      <div className="min-h-screen w-full bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-900 p-4 sm:p-6">
+      <div className="min-h-screen w-full nd-screen-in bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-900 p-4 sm:p-6">
         <div className="max-w-4xl mx-auto">
           <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
             <span className="text-xs font-bold text-cyan-300 bg-cyan-500/10 px-3 py-1.5 rounded-full flex items-center gap-1.5">
@@ -1670,7 +1670,7 @@ export default function NeuroDetectiveRDoC() {
                 {g === "Casos RDoC" && "🧠"} {g === "Infantojuvenil" && "👶"} {g === "Adultos" && "🧑"} {g === "Geriátrico" && "👴"} {g}
               </h3>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                {groups[g].map(i => {
+                {groups[g].map((i, idx) => {
                   const meta = CASE_META[i];
                   const c = CASES[i];
                   const done = attemptedCases.has(i);
@@ -1679,7 +1679,8 @@ export default function NeuroDetectiveRDoC() {
                     <button
                       key={i}
                       onClick={() => openCase(i)}
-                      className={`text-left p-3 rounded-xl border transition-all hover:scale-[1.02] ${
+                      style={{ animationDelay: `${Math.min(idx * 45, 400)}ms` }}
+                      className={`nd-rise text-left p-3 rounded-xl border transition-all hover:scale-[1.02] ${
                         done ? (bad ? "border-red-500/40 bg-red-500/5" : "border-emerald-500/40 bg-emerald-500/5") : "border-slate-700 bg-slate-800/50 hover:bg-slate-800"
                       }`}
                     >
@@ -1775,7 +1776,7 @@ export default function NeuroDetectiveRDoC() {
 
   if (screen === "report") {
     return (
-      <div className="min-h-screen w-full bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-900 p-6">
+      <div className="min-h-screen w-full nd-screen-in bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-900 p-6">
         <div className="max-w-2xl mx-auto bg-slate-900/60 border border-indigo-500/30 rounded-2xl p-8 shadow-2xl backdrop-blur">
           {tier && (
             <div className="text-center mb-6">
@@ -1885,7 +1886,7 @@ export default function NeuroDetectiveRDoC() {
 
   if (screen === "study-end") {
     return (
-      <div className="min-h-screen w-full bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-900 flex items-center justify-center p-6">
+      <div className="min-h-screen w-full nd-screen-in bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-900 flex items-center justify-center p-6">
         <div className="max-w-md w-full bg-slate-900/60 border border-purple-500/30 rounded-2xl p-8 shadow-2xl backdrop-blur text-center">
           <div className="text-5xl mb-3">🎓</div>
           <h2 className="text-xl font-bold text-white">Modo estudio completado</h2>
@@ -1912,7 +1913,7 @@ export default function NeuroDetectiveRDoC() {
     const domainLabel = DOMAINS.find(d => d.key === currentStudyCase.domainKey)?.label;
 
     return (
-      <div className="min-h-screen w-full bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-900 p-4 sm:p-6">
+      <div className="min-h-screen w-full nd-screen-in bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-900 p-4 sm:p-6">
         <div className="max-w-2xl mx-auto">
           <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
             <span className="text-xs font-bold text-purple-300 bg-purple-500/15 px-3 py-1.5 rounded-full flex items-center gap-1.5">
@@ -1932,7 +1933,7 @@ export default function NeuroDetectiveRDoC() {
             ))}
           </div>
 
-          <div className="bg-slate-900/60 border border-purple-500/30 rounded-2xl p-6 shadow-2xl backdrop-blur">
+          <div key={studyPos} className="nd-page-in bg-slate-900/60 border border-purple-500/30 rounded-2xl p-6 shadow-2xl backdrop-blur">
             <div className="flex items-center gap-2 mb-3">
               <BookOpen className="w-4 h-4 text-purple-400" />
               <span className="text-xs font-mono text-slate-500">CASO DE ESTUDIO #{String(studyCaseIdx + 1).padStart(2, "0")}</span>
@@ -2002,7 +2003,7 @@ export default function NeuroDetectiveRDoC() {
     const synth = SYNTHESIS_CASES[synthesisIndex];
     const selOpt = synthesisSelected !== null ? synth.options[synthesisSelected] : null;
     return (
-      <div className="min-h-screen w-full bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-900 p-4 sm:p-6">
+      <div className="min-h-screen w-full nd-screen-in bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-900 p-4 sm:p-6">
         <div className="max-w-2xl mx-auto">
           <div className="flex items-center justify-between mb-4">
             <span className="text-xs font-bold text-emerald-300 bg-emerald-500/10 px-3 py-1.5 rounded-full flex items-center gap-1.5">
@@ -2059,7 +2060,7 @@ export default function NeuroDetectiveRDoC() {
   // screen === "playing" — fase de entrevista
   if (!interviewDone && !showReport && !showLongitudinal) {
     return (
-      <div className="min-h-screen w-full bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-900 p-4 sm:p-6">
+      <div className="min-h-screen w-full nd-screen-in bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-900 p-4 sm:p-6">
         <div className="max-w-2xl mx-auto">
           <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
             <span className="text-xs font-bold text-cyan-400 bg-cyan-500/10 px-3 py-1.5 rounded-full">
@@ -2129,7 +2130,7 @@ export default function NeuroDetectiveRDoC() {
     const { templateParts, blanks, bank } = reportData;
     const allFilled = reportFilledTypes.size === blanks.length;
     return (
-      <div className="min-h-screen w-full bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-900 p-4 sm:p-6">
+      <div className="min-h-screen w-full nd-screen-in bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-900 p-4 sm:p-6">
         <div className="max-w-2xl mx-auto">
           <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
             <span className="text-xs font-bold text-emerald-300 bg-emerald-500/10 px-3 py-1.5 rounded-full flex items-center gap-1.5">
@@ -2256,7 +2257,7 @@ export default function NeuroDetectiveRDoC() {
     }
 
     return (
-      <div className="min-h-screen w-full bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-900 p-4 sm:p-6">
+      <div className="min-h-screen w-full nd-screen-in bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-900 p-4 sm:p-6">
         <div className="max-w-2xl mx-auto">
           <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
             <span className="text-xs font-bold text-indigo-300 bg-indigo-500/10 px-3 py-1.5 rounded-full flex items-center gap-1.5">
@@ -2292,7 +2293,7 @@ export default function NeuroDetectiveRDoC() {
   const isGrid = currentQuestion.type === "dominio" || currentQuestion.type === "unidad";
 
   return (
-    <div className="min-h-screen w-full bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-900 nd-bg-animated p-4 sm:p-6">
+    <div className="min-h-screen w-full nd-screen-in bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-900 nd-bg-animated p-4 sm:p-6">
       <div className="max-w-2xl mx-auto">
         <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
           <span className="text-xs font-bold text-cyan-400 bg-cyan-500/10 px-3 py-1.5 rounded-full">{LEVEL_LABEL[currentCase.level]}</span>

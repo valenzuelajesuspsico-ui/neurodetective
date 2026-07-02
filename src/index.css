@@ -35,6 +35,20 @@ body {
 }
 .nd-page-in { animation: nd-page-in 0.3s cubic-bezier(0.22, 1, 0.36, 1) both; }
 
+/* Transición al cambiar de pantalla (inicio → sala → caso → informe…) */
+@keyframes nd-screen-in {
+  from { opacity: 0; transform: translateY(10px) scale(0.994); }
+  to   { opacity: 1; transform: none; }
+}
+.nd-screen-in { animation: nd-screen-in 0.34s cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+/* Aparición escalonada de elementos de una lista (tarjetas de la sala) */
+@keyframes nd-rise {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: none; }
+}
+.nd-rise { animation: nd-rise 0.4s cubic-bezier(0.22, 1, 0.36, 1) both; }
+
 /* Feedback correcto: pulso verde */
 @keyframes nd-correct {
   0%   { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.55); }
@@ -103,7 +117,7 @@ body {
 
 /* Respeta la preferencia de menos movimiento */
 @media (prefers-reduced-motion: reduce) {
-  .nd-card-in, .nd-page-in, .nd-correct, .nd-shake, .nd-float,
+  .nd-card-in, .nd-page-in, .nd-screen-in, .nd-rise, .nd-correct, .nd-shake, .nd-float,
   .nd-flame, .nd-stamp, .nd-bar-fill, .nd-bg-animated {
     animation: none !important;
   }
