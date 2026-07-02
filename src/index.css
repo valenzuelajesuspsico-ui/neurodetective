@@ -1,0 +1,125 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html,
+body,
+#root {
+  min-height: 100vh;
+  margin: 0;
+}
+
+body {
+  background-color: #0f172a;
+}
+
+/* Frases seleccionables del informe en Modo Supervisión */
+.supervision-segment:hover {
+  background-color: rgba(99, 102, 241, 0.18) !important;
+  box-shadow: inset 0 -2px 0 #6366f1 !important;
+}
+
+/* ===== Efectos de experiencia de juego ===== */
+
+/* Entrada de tarjeta / pantalla */
+@keyframes nd-card-in {
+  from { opacity: 0; transform: translateY(12px) scale(0.995); }
+  to   { opacity: 1; transform: none; }
+}
+.nd-card-in { animation: nd-card-in 0.34s cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+/* Paso de pregunta: entra desde la derecha, como pasar una página */
+@keyframes nd-page-in {
+  from { opacity: 0; transform: translateX(26px); }
+  to   { opacity: 1; transform: none; }
+}
+.nd-page-in { animation: nd-page-in 0.3s cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+/* Transición al cambiar de pantalla (inicio → sala → caso → informe…) */
+@keyframes nd-screen-in {
+  from { opacity: 0; transform: translateY(10px) scale(0.994); }
+  to   { opacity: 1; transform: none; }
+}
+.nd-screen-in { animation: nd-screen-in 0.34s cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+/* Aparición escalonada de elementos de una lista (tarjetas de la sala) */
+@keyframes nd-rise {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: none; }
+}
+.nd-rise { animation: nd-rise 0.4s cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+/* Feedback correcto: pulso verde */
+@keyframes nd-correct {
+  0%   { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.55); }
+  70%  { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+}
+.nd-correct { animation: nd-correct 0.6s ease-out; }
+
+/* Feedback incorrecto: sacudida */
+@keyframes nd-shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-7px); }
+  40% { transform: translateX(6px); }
+  60% { transform: translateX(-4px); }
+  80% { transform: translateX(3px); }
+}
+.nd-shake { animation: nd-shake 0.42s ease-in-out; }
+
+/* Puntos flotantes (+150) */
+@keyframes nd-float {
+  0%   { opacity: 0; transform: translateY(6px) scale(0.9); }
+  15%  { opacity: 1; transform: translateY(0) scale(1); }
+  100% { opacity: 0; transform: translateY(-38px) scale(1); }
+}
+.nd-float { animation: nd-float 0.9s ease-out both; }
+
+/* Racha en llamas: latido/resplandor */
+@keyframes nd-flame {
+  0%, 100% { transform: scale(1); filter: drop-shadow(0 0 0 rgba(251, 146, 60, 0)); }
+  50% { transform: scale(1.22); filter: drop-shadow(0 0 6px rgba(251, 146, 60, 0.8)); }
+}
+.nd-flame { animation: nd-flame 0.7s ease-in-out; }
+
+/* Sello del informe */
+@keyframes nd-stamp {
+  0%   { opacity: 0; transform: scale(2.1) rotate(-16deg); }
+  55%  { opacity: 1; }
+  70%  { transform: scale(0.92) rotate(-7deg); }
+  100% { opacity: 1; transform: scale(1) rotate(-8deg); }
+}
+.nd-stamp { animation: nd-stamp 0.5s cubic-bezier(0.3, 1.4, 0.5, 1) both; }
+
+/* Barra de competencia que se llena */
+@keyframes nd-bar-fill { from { width: 0 !important; } }
+.nd-bar-fill { animation: nd-bar-fill 0.9s ease-out both; }
+
+/* Fondo con gradiente en movimiento lento */
+@keyframes nd-bg-shift {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+.nd-bg-animated {
+  background-size: 200% 200%;
+  animation: nd-bg-shift 24s ease-in-out infinite;
+}
+
+/* Cursor de máquina de escribir */
+.nd-caret::after {
+  content: "▌";
+  margin-left: 1px;
+  opacity: 0.7;
+  animation: nd-blink 1s steps(1) infinite;
+}
+@keyframes nd-blink { 50% { opacity: 0; } }
+
+/* Respeta la preferencia de menos movimiento */
+@media (prefers-reduced-motion: reduce) {
+  .nd-card-in, .nd-page-in, .nd-screen-in, .nd-rise, .nd-correct, .nd-shake, .nd-float,
+  .nd-flame, .nd-stamp, .nd-bar-fill, .nd-bg-animated {
+    animation: none !important;
+  }
+  .nd-caret::after { animation: none; }
+}
