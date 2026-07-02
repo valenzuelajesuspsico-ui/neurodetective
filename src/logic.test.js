@@ -6,6 +6,9 @@ import {
   getRank,
   getClinicalRank,
   buildReportData,
+  classifyOutcome,
+  getPerformanceTier,
+  parseReview,
 } from "./logic.js";
 
 describe("shuffleArr", () => {
@@ -86,5 +89,48 @@ describe("buildReportData", () => {
   it("la plantilla intercala texto y marcadores de posición", () => {
     expect(data.templateParts).toContain("{sindrome}");
     expect(data.templateParts[data.templateParts.length - 1]).toBe(".");
+  });
+});
+
+describe("classifyOutcome", () => {
+  const base = { wasPerfect: false, caseHintUsed: false, sindromeWrong: false, lostTrust: false, revealedSet: new Set() };
+  it("acierto perfecto → excelente; acierto con tropiezos → bueno", () => {
+    expect(classifyOutcome({}, 0, { ...base, wasPerfect: true })).toBe("excelente");
+    expect(classifyOutcome({}, 0, { ...base, wasPerfect: false })).toBe("bueno");
+  });
+  it("caso reversible mal diagnosticado → malGrave", () => {
+    expect(classifyOutcome({ reversible: true }, 0, { ...base, sindromeWrong: true })).toBe("malGrave");
+  });
+  it("saltarse la pista clave (no reversible) → malEvitable", () => {
+    const c = { keyInterviewClue: 2 };
+    expect(classifyOutcome(c, 0, { ...base, sindromeWrong: true, revealedSet: new Set([0, 1]) })).toBe("malEvitable");
+  });
+  it("mal diagnóstico habiendo investigado a fondo → malHonesto", () => {
+    const c = { keyInterviewClue: 2 };
+    expect(classifyOutcome(c, 0, { ...base, sindromeWrong: true, revealedSet: new Set([0, 1, 2]) })).toBe("malHonesto");
+  });
+});
+
+describe("getPerformanceTier", () => {
+  it("null con menos de 3 casos atendidos", () => {
+    expect(getPerformanceTier(0, 2)).toBeNull();
+  });
+  it("sin errores → apto; muchos errores → no apto (regresa al curso)", () => {
+    expect(getPerformanceTier(0, 5).action).toBe("none");
+    const bad = getPerformanceTier(4, 5);
+    expect(bad.action).toBe("course");
+  });
+});
+
+describe("parseReview", () => {
+  it("devuelve null en prosa sin etiquetas", () => {
+    expect(parseReview("Un comentario normal sin etiquetas.")).toBeNull();
+  });
+  it("extrae secciones etiquetadas [CAMPO]", () => {
+    const secciones = parseReview("[VEREDICTO] Bien argumentado. [DOMINIO] Revisa la clasificación.");
+    expect(secciones).not.toBeNull();
+    const tags = secciones.map(s => s.tag);
+    expect(tags).toContain("VEREDICTO");
+    expect(tags).toContain("DOMINIO");
   });
 });
