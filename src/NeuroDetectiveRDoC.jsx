@@ -1,4 +1,4 @@
-import { useState, useEffect, Fragment } from "react";
+import { useState, useEffect, useMemo, Fragment } from "react";
 import { Brain, Lightbulb, CheckCircle2, XCircle, ChevronRight, ChevronLeft, RotateCcw, Flame, LayoutGrid, Sparkles, BookOpen, Gamepad2, X, HelpCircle, GitCompare, Heart, ClipboardList, GraduationCap, FolderOpen, Lock, Home, FileText, Search, Calendar, BarChart3, Volume2, VolumeX } from "lucide-react";
 import { SFX, Typewriter } from "./sound.jsx";
 import { shuffleArr, pickRandom, competencyPct, getRank, getClinicalRank, buildReportData, classifyOutcome, buildSupervisorNote, getPerformanceTier, parseReview } from "./logic.js";
@@ -66,6 +66,22 @@ const EXPERT_MODEL = "claude-sonnet-5";
 const KEY_STORAGE = "nd_anthropic_key";
 const SOUND_STORAGE = "nd_sound_on";
 const BESTSCORE_STORAGE = "nd_best_score";
+const PROGRESS_STORAGE = "nd_progress";
+const FONT_STORAGE = "nd_font_scale";
+
+// Carga el progreso guardado (perfil + avance del modo juego), o null si no hay.
+function loadProgress() {
+  try {
+    const raw = storage.get(PROGRESS_STORAGE, null);
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
+}
+
+const DEFAULT_STATS_BY_TYPE = {
+  sindrome: { correct: 0, total: 0 }, dominio: { correct: 0, total: 0 },
+  constructo: { correct: 0, total: 0 }, unidad: { correct: 0, total: 0 },
+  instrumento: { correct: 0, total: 0 }, contexto: { correct: 0, total: 0 },
+};
 
 // Canal de retroalimentación (issue prellenado en GitHub) para que especialistas reporten casos discutibles.
 const FEEDBACK_URL = "https://github.com/valenzuelajesuspsico-ui/neurodetective/issues/new?title=" +
@@ -218,7 +234,15 @@ export default function NeuroDetectiveRDoC() {
   const [soundOn, setSoundOn] = useState(() => storage.get(SOUND_STORAGE, "0") === "1");
   const [pointsFx, setPointsFx] = useState(null); // { amount, id }
   const [bestScore, setBestScore] = useState(() => Number(storage.get(BESTSCORE_STORAGE, "0")) || 0);
+  const [savedProgress] = useState(loadProgress); // progreso guardado (una sola lectura)
+  const [reviewMode, setReviewMode] = useState(false); // repasar solo los casos fallados
+  const [shareMsg, setShareMsg] = useState(null);
+  const [fontScale, setFontScale] = useState(() => Number(storage.get(FONT_STORAGE, "1")) || 1);
   useEffect(() => { SFX.setEnabled(soundOn); }, [soundOn]);
+  useEffect(() => {
+    if (typeof document !== "undefined") document.documentElement.style.fontSize = `${Math.round(16 * fontScale)}px`;
+    storage.set(FONT_STORAGE, String(fontScale));
+  }, [fontScale]);
   function toggleSound() {
     setSoundOn(prev => {
       const next = !prev;
@@ -230,17 +254,17 @@ export default function NeuroDetectiveRDoC() {
   }
 
   // --- perfil del jugador (solo durante la sesión) ---
-  const [playerName, setPlayerName] = useState("");
-  const [playerLastName, setPlayerLastName] = useState("");
-  const [playerSpecialty, setPlayerSpecialty] = useState("Neuropsicología");
-  const [playerInstitution, setPlayerInstitution] = useState("");
-  const [prestige, setPrestige] = useState(50);
+  const [playerName, setPlayerName] = useState(() => savedProgress?.playerName ?? "");
+  const [playerLastName, setPlayerLastName] = useState(() => savedProgress?.playerLastName ?? "");
+  const [playerSpecialty, setPlayerSpecialty] = useState(() => savedProgress?.playerSpecialty ?? "Neuropsicología");
+  const [playerInstitution, setPlayerInstitution] = useState(() => savedProgress?.playerInstitution ?? "");
+  const [prestige, setPrestige] = useState(() => savedProgress?.prestige ?? 50);
   const [supervisorNote, setSupervisorNote] = useState(null);
 
   // --- estado modo juego ---
   const [caseIndex, setCaseIndex] = useState(0);
   const [questionIndex, setQuestionIndex] = useState(0);
-  const [score, setScore] = useState(0);
+  const [score, setScore] = useState(() => savedProgress?.score ?? 0);
   useEffect(() => {
     if (score > bestScore) { setBestScore(score); storage.set(BESTSCORE_STORAGE, String(score)); }
   }, [score, bestScore]);
@@ -251,21 +275,26 @@ export default function NeuroDetectiveRDoC() {
   const [hintUsed, setHintUsed] = useState(false);
   const [caseHintUsed, setCaseHintUsed] = useState(false);
   const [questionResults, setQuestionResults] = useState([]);
-  const [discoveredCells, setDiscoveredCells] = useState(new Set());
-  const [stats, setStats] = useState({ correct: 0, total: 0 });
-  const [statsByType, setStatsByType] = useState({
-    sindrome: { correct: 0, total: 0 }, dominio: { correct: 0, total: 0 },
-    constructo: { correct: 0, total: 0 }, unidad: { correct: 0, total: 0 }, instrumento: { correct: 0, total: 0 },
-    contexto: { correct: 0, total: 0 },
-  });
+  const [discoveredCells, setDiscoveredCells] = useState(() => new Set(savedProgress?.discovered ?? []));
+  const [stats, setStats] = useState(() => savedProgress?.stats ?? { correct: 0, total: 0 });
+  const [statsByType, setStatsByType] = useState(() => savedProgress?.statsByType ?? { ...DEFAULT_STATS_BY_TYPE });
   const [revealed, setRevealed] = useState(new Set());
   const [interviewDone, setInterviewDone] = useState(false);
   const [funBanner, setFunBanner] = useState(null);
   const [trust, setTrust] = useState(3);
   const [caseLostTrust, setCaseLostTrust] = useState(false);
   const [mustReconsult, setMustReconsult] = useState(false);
-  const [misdiagnosedCases, setMisdiagnosedCases] = useState(new Set());
-  const [attemptedCases, setAttemptedCases] = useState(new Set());
+  const [misdiagnosedCases, setMisdiagnosedCases] = useState(() => new Set(savedProgress?.misdiagnosed ?? []));
+  const [attemptedCases, setAttemptedCases] = useState(() => new Set(savedProgress?.attempted ?? []));
+  // Guarda el progreso (perfil + avance) cada vez que cambia algo relevante.
+  useEffect(() => {
+    storage.set(PROGRESS_STORAGE, JSON.stringify({
+      score, prestige, playerName, playerLastName, playerSpecialty, playerInstitution,
+      attempted: [...attemptedCases], misdiagnosed: [...misdiagnosedCases],
+      discovered: [...discoveredCells], stats, statsByType,
+    }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [score, prestige, playerName, playerLastName, playerSpecialty, playerInstitution, attemptedCases, misdiagnosedCases, discoveredCells, stats, statsByType]);
 
   // --- estado redacción de informe + seguimiento longitudinal ---
   const [showReport, setShowReport] = useState(false);
@@ -415,6 +444,12 @@ export default function NeuroDetectiveRDoC() {
 
   const currentCase = CASES[caseIndex];
   const currentQuestion = currentCase ? currentCase.questions[questionIndex] : null;
+  // Orden barajado de las opciones, estable mientras se está en la misma pregunta
+  // (evita que se memorice la posición de la respuesta correcta al repetir casos).
+  const displayedOptions = useMemo(
+    () => (currentQuestion ? shuffleArr(currentQuestion.options) : []),
+    [caseIndex, questionIndex] // eslint-disable-line react-hooks/exhaustive-deps
+  );
 
   function startCase(idx) {
     setCaseIndex(idx);
@@ -447,6 +482,7 @@ export default function NeuroDetectiveRDoC() {
     setPrestige(50);
     setSupervisorNote(null);
     setCaseOutcome(null);
+    setReviewMode(false);
   }
 
   function resetStudy() {
@@ -454,9 +490,13 @@ export default function NeuroDetectiveRDoC() {
   }
 
   function handleStartGame() {
-    resetGame();
+    // No se reinicia: el progreso guardado se conserva entre sesiones.
     if (!playerName.trim()) setScreen("profile");
     else setScreen("lobby");
+  }
+  function clearProgress() {
+    if (typeof window !== "undefined" && !window.confirm("¿Borrar tu progreso (casos, prestigio y puntaje)? Esto no se puede deshacer.")) return;
+    resetGame();
   }
   function handleStartStudy() { resetStudy(); setScreen("study"); }
   function goHome() { setScreen("start"); }
@@ -471,7 +511,7 @@ export default function NeuroDetectiveRDoC() {
 
   function handleSelect(i) {
     if (showFeedback) return;
-    const option = currentQuestion.options[i];
+    const option = displayedOptions[i];
     const qType = currentQuestion.type;
     setSelected(i);
     setShowFeedback(true);
@@ -522,7 +562,7 @@ export default function NeuroDetectiveRDoC() {
 
   function handleHint() {
     if (hintUsed || showFeedback || score < 30) return;
-    const incorrect = currentQuestion.options.map((o, i) => ({ o, i })).filter(x => !x.o.correct);
+    const incorrect = displayedOptions.map((o, i) => ({ o, i })).filter(x => !x.o.correct);
     if (incorrect.length === 0) return;
     const pick = incorrect[Math.floor(Math.random() * incorrect.length)].i;
     setRemovedIdx(pick);
@@ -560,6 +600,9 @@ export default function NeuroDetectiveRDoC() {
     const sindromeWrong = currentCase.questions.some((q, idx) => q.type === "sindrome" && questionResults[idx] === false);
     if (sindromeWrong || caseLostTrust) {
       setMisdiagnosedCases(prev => new Set(prev).add(caseIndex));
+    } else {
+      // Al resolverlo bien (p. ej. al repasar), deja de contar como error.
+      setMisdiagnosedCases(prev => { const n = new Set(prev); n.delete(caseIndex); return n; });
     }
     setAttemptedCases(prev => new Set(prev).add(caseIndex));
 
@@ -678,6 +721,21 @@ export default function NeuroDetectiveRDoC() {
     correct: statsByType.dominio.correct + statsByType.constructo.correct + statsByType.unidad.correct,
     total: statsByType.dominio.total + statsByType.constructo.total + statsByType.unidad.total,
   };
+
+  function shareSummary() {
+    const c = obj => { const p = competencyPct(obj); return p === null ? "—" : `${p}%`; };
+    const text = [
+      `NeuroDetective RDoC — ${playerName} ${playerLastName}`.trim(),
+      `Rango: ${rank.emoji} ${rank.label}`,
+      `Puntaje: ${score} · Precisión: ${accuracy}%`,
+      `Expedientes atendidos: ${attemptedCases.size}/${CASES.length}`,
+      `Competencias — Dx diferencial: ${c(statsByType.sindrome)} · Clasificación RDoC: ${c(rdocCombined)} · Instrumentos: ${c(statsByType.instrumento)}`,
+    ].join("\n");
+    const done = () => { setShareMsg("Resumen copiado ✓"); setTimeout(() => setShareMsg(null), 2500); };
+    if (navigator.share) navigator.share({ title: "Mi progreso — NeuroDetective RDoC", text }).catch(() => {});
+    else if (navigator.clipboard) navigator.clipboard.writeText(text).then(done).catch(() => {});
+    else { setShareMsg("No disponible en este navegador"); setTimeout(() => setShareMsg(null), 2500); }
+  }
 
   if (screen === "start") {
     return (
@@ -828,6 +886,19 @@ export default function NeuroDetectiveRDoC() {
               Reportar un caso discutible <ChevronRight className="w-4 h-4" />
             </a>
           </div>
+
+          <div className="mt-4 bg-slate-800/50 rounded-xl p-4 flex items-center justify-between gap-3">
+            <div>
+              <p className="text-slate-200 text-xs font-bold">Accesibilidad · tamaño de texto</p>
+              <p className="text-slate-500 text-[11px] mt-0.5">Ajusta el tamaño de toda la app.</p>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <button onClick={() => setFontScale(s => Math.max(0.9, Math.round((s - 0.1) * 10) / 10))} aria-label="Reducir tamaño de texto" className="w-8 h-8 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-100 text-sm font-bold">A−</button>
+              <span className="text-slate-400 text-xs w-10 text-center">{Math.round(fontScale * 100)}%</span>
+              <button onClick={() => setFontScale(s => Math.min(1.4, Math.round((s + 0.1) * 10) / 10))} aria-label="Aumentar tamaño de texto" className="w-8 h-8 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-100 text-base font-bold">A+</button>
+            </div>
+          </div>
+
           <button onClick={goHome} className="mt-5 w-full bg-slate-800 hover:bg-slate-700 transition-all text-slate-300 font-medium py-2.5 rounded-xl text-sm">
             Volver al inicio
           </button>
@@ -1666,7 +1737,10 @@ export default function NeuroDetectiveRDoC() {
   if (screen === "lobby") {
     const groupOrder = ["Casos RDoC", "Infantojuvenil", "Adultos", "Geriátrico"];
     const groups = { "Casos RDoC": [], "Infantojuvenil": [], "Adultos": [], "Geriátrico": [] };
-    CASES.forEach((c, i) => groups[c.grupo || "Casos RDoC"].push(i));
+    CASES.forEach((c, i) => {
+      if (reviewMode && !misdiagnosedCases.has(i)) return; // en repaso: solo los fallados
+      groups[c.grupo || "Casos RDoC"].push(i);
+    });
 
     return (
       <div className="min-h-screen w-full nd-screen-in bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-900 p-4 sm:p-6">
@@ -1686,6 +1760,38 @@ export default function NeuroDetectiveRDoC() {
           </div>
 
           <FunBanner text={funBanner} />
+
+          {/* Barra de acciones: repaso de fallos, compartir, reiniciar */}
+          <div className="flex items-center gap-2 flex-wrap mb-4">
+            <button
+              onClick={() => setReviewMode(r => !r)}
+              disabled={misdiagnosedCases.size === 0 && !reviewMode}
+              className={`text-xs font-medium px-3 py-1.5 rounded-full border transition-colors flex items-center gap-1.5 ${
+                reviewMode ? "border-orange-500/50 bg-orange-500/15 text-orange-200"
+                : misdiagnosedCases.size === 0 ? "border-slate-800 bg-slate-800/40 text-slate-600 cursor-not-allowed"
+                : "border-orange-500/30 bg-orange-500/10 text-orange-300 hover:bg-orange-500/20"
+              }`}
+            >
+              <RotateCcw className="w-3.5 h-3.5" /> {reviewMode ? "Salir del repaso" : `Repasar mis fallos (${misdiagnosedCases.size})`}
+            </button>
+            <button onClick={shareSummary} className="text-xs font-medium px-3 py-1.5 rounded-full border border-cyan-500/30 bg-cyan-500/10 text-cyan-300 hover:bg-cyan-500/20 transition-colors flex items-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5" /> Compartir resumen
+            </button>
+            {attemptedCases.size > 0 && (
+              <button onClick={clearProgress} className="text-xs font-medium px-3 py-1.5 rounded-full border border-slate-700 bg-slate-800/50 text-slate-400 hover:text-red-300 hover:border-red-500/40 transition-colors">
+                Reiniciar progreso
+              </button>
+            )}
+            {shareMsg && <span className="text-emerald-300 text-xs font-medium">{shareMsg}</span>}
+          </div>
+
+          {reviewMode && (
+            <div className="mb-4 bg-orange-500/10 border border-orange-500/30 rounded-xl px-4 py-3 text-orange-200 text-sm">
+              {misdiagnosedCases.size > 0
+                ? `Modo repaso: mostrando solo los ${misdiagnosedCases.size} expediente(s) que diagnosticaste mal. Al resolverlos bien, saldrán de la lista.`
+                : "¡No te queda ningún fallo por repasar! Sal del repaso para ver todos los expedientes."}
+            </div>
+          )}
 
           {supervisorNote && (
             <div className="mb-4 bg-indigo-500/10 border border-indigo-500/30 rounded-xl px-4 py-3 flex items-start gap-2">
@@ -1770,7 +1876,7 @@ export default function NeuroDetectiveRDoC() {
             </section>
           ))}
 
-          <section className="mb-6">
+          <section className={`mb-6 ${reviewMode ? "hidden" : ""}`}>
             <h3 className="text-white font-bold text-sm mb-3 flex items-center gap-2">
               <GitCompare className="w-4 h-4 text-emerald-400" /> Casos de Síntesis
             </h3>
@@ -2361,7 +2467,7 @@ export default function NeuroDetectiveRDoC() {
 
   // screen === "playing" — fase de diagnóstico
   const totalQ = currentCase.questions.length;
-  const selectedOption = selected !== null ? currentQuestion.options[selected] : null;
+  const selectedOption = selected !== null ? displayedOptions[selected] : null;
   const isGrid = currentQuestion.type === "dominio" || currentQuestion.type === "unidad";
 
   return (
@@ -2446,7 +2552,7 @@ export default function NeuroDetectiveRDoC() {
           )}
 
           <div className={isGrid ? "grid grid-cols-2 gap-2" : "space-y-2"}>
-            {currentQuestion.options.map((opt, i) => {
+            {displayedOptions.map((opt, i) => {
               if (i === removedIdx) {
                 return (
                   <div key={i} className={`px-3 py-3 rounded-xl border border-slate-800 bg-slate-800/30 text-slate-600 line-through ${isGrid ? "text-center text-xs" : "text-sm"}`}>{opt.text}</div>
