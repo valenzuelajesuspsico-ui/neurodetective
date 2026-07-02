@@ -27,6 +27,7 @@ npm run build    # build de producción en dist/
 npm run preview  # previsualizar el build de producción
 
 npm run build:singlefile   # genera un único HTML autónomo en dist-singlefile/
+npm test                   # ejecuta las pruebas (Vitest)
 ```
 
 El comando `build:singlefile` empaqueta toda la app (JS + CSS) en un solo
@@ -39,9 +40,18 @@ probar la aplicación rápidamente.
 ```
 index.html                     punto de entrada HTML
 src/main.jsx                   bootstrap de React
-src/NeuroDetectiveRDoC.jsx     aplicación completa (componente principal)
-src/index.css                  directivas de Tailwind y estilos base
+src/NeuroDetectiveRDoC.jsx     aplicación (componente principal + pantallas)
+src/logic.js                   lógica pura, testeable (informe, rangos, etc.)
+src/logic.test.js              pruebas de la lógica pura (Vitest)
+src/index.css                  Tailwind, estilos base y animaciones
 ```
+
+## Modo Experto (opcional)
+
+El "Modo Experto" consulta la API de Anthropic **desde el navegador**, por lo
+que requiere tu propia API key, que introduces en la pantalla y se guarda solo
+en `localStorage` (nunca se envía a otro sitio). Sin key, el resto del juego
+funciona con normalidad.
 
 ---
 

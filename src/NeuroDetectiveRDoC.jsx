@@ -1,5 +1,6 @@
 import { useState, useEffect, Fragment } from "react";
 import { Brain, Lightbulb, CheckCircle2, XCircle, ChevronRight, ChevronLeft, RotateCcw, Flame, LayoutGrid, Sparkles, BookOpen, Gamepad2, X, HelpCircle, GitCompare, Heart, ClipboardList, GraduationCap, FolderOpen, Lock, Home, FileText, Search, Calendar, BarChart3, Volume2, VolumeX } from "lucide-react";
+import { shuffleArr, pickRandom, competencyPct, getRank, getClinicalRank, buildReportData } from "./logic.js";
 
 // ===== Motor de sonido (Web Audio API, sintetizado — sin archivos) =====
 const SFX = (() => {
@@ -2292,15 +2293,6 @@ Guía al colega a formular estas críticas él mismo; aporta las tuyas como las 
 LÍMITES: Solo analiza estudios de caso clínicos publicados. Si el material es una revisión, meta-análisis o no es un estudio de caso, indícalo y pídele otro. Si el texto disponible es insuficiente para una crítica rigurosa (p. ej. solo el título), dilo con franqueza y pide el abstract o secciones clave en vez de inventar.
 Responde SIEMPRE en español. Terminología clínica precisa. Tono de colega a colega: directo, riguroso, respetuoso. Nunca condescendiente.`;
 
-function pickRandom(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
-function shuffleArr(a) {
-  const arr = [...a];
-  for (let i = arr.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [arr[i], arr[j]] = [arr[j], arr[i]];
-  }
-  return arr;
-}
 
 const STREAK3_PHRASES = [
   "🔥 ¡Racha de 3! Luria ya te andaba refiriendo casos, ¡eh!",
@@ -2335,34 +2327,6 @@ const LEVEL_UP_PHRASES = {
   2: "🎓 ¡Síntesis resuelta! El Instituto Nacional de Neurología y Neurocirugía Manuel Velasco Suárez ya te anda buscando para una plaza.",
 };
 const TRUST_LOST_PHRASE = "💔 La familia ha perdido la confianza en el diagnóstico — este caso quedará registrado como mal pronóstico.";
-function buildReportData(caseObj) {
-  const order = ["sindrome", "dominio", "constructo", "unidad", "instrumento"];
-  const present = order.map(t => caseObj.questions.find(q => q.type === t)).filter(Boolean);
-
-  // Construye el informe dinámicamente a partir de los campos presentes,
-  // sin depender de una plantilla predefinida por combinación exacta.
-  const FIELD_INTRO = {
-    sindrome: "Tras la evaluación neuropsicológica, se concluye que el paciente presenta un cuadro compatible con ",
-    dominio: ", ubicado en el dominio RDoC de ",
-    constructo: ". Específicamente, se ve alterado el constructo de ",
-    unidad: ", evidenciado a través de la unidad de análisis de ",
-    instrumento: ". Para fundamentar este perfil se recomienda ",
-  };
-  const templateParts = [];
-  present.forEach((q, i) => {
-    templateParts.push(FIELD_INTRO[q.type] || ". ");
-    templateParts.push(`{${q.type}}`);
-  });
-  templateParts.push(".");
-
-  const blanks = present.map(q => ({ type: q.type, answer: q.options.find(o => o.correct).text }));
-  const distractors = present.map(q => {
-    const wrong = q.options.filter(o => !o.correct);
-    return wrong[Math.floor(Math.random() * wrong.length)].text;
-  });
-  const bank = shuffleArr([...blanks.map(b => b.answer), ...distractors]);
-  return { templateParts, blanks, bank };
-}
 
 const MAX_SCORE = CASES.reduce((sum, c) => sum + c.questions.reduce((s, q) => s + BASE_POINTS[q.type], 0), 0);
 const TOTAL_MAX = MAX_SCORE + SYNTHESIS_BONUS * SYNTHESIS_CASES.length + REPORT_BONUS * CASES.length;
@@ -2371,23 +2335,7 @@ const MAX_CELLS = new Set(CASES.filter(c => c.domainKey && c.unitKey).map(c => `
 const STUDY_STEPS = STUDY_CASES.flatMap((c, ci) => c.questions.map((_, qi) => [ci, qi]));
 const STUDY_TOTAL = STUDY_STEPS.length;
 
-function getRank(pct) {
-  if (pct >= 85) return { label: "Maestro Neuropsicólogo RDoC", emoji: "🏆" };
-  if (pct >= 65) return { label: "Diagnosticador Experto", emoji: "🧠" };
-  if (pct >= 40) return { label: "Investigador", emoji: "🔍" };
-  return { label: "Aprendiz", emoji: "🧩" };
-}
 // --- Sistema de Prestigio Clínico (rango profesional que evoluciona en la sesión) ---
-const CLINICAL_RANKS = [
-  { min: 90, label: "Jefe del Servicio", emoji: "👑" },
-  { min: 70, label: "Especialista de Referencia", emoji: "🎖️" },
-  { min: 45, label: "Especialista de Planta", emoji: "🩺" },
-  { min: 20, label: "Residente Avanzado", emoji: "📋" },
-  { min: 0, label: "Residente en Formación", emoji: "🌱" },
-];
-function getClinicalRank(prestige) {
-  return CLINICAL_RANKS.find(r => prestige >= r.min) || CLINICAL_RANKS[CLINICAL_RANKS.length - 1];
-}
 // Deltas de prestigio según la calidad clínica del cierre del caso.
 const PRESTIGE_DELTA = {
   excelente: 8,      // perfecto: sin pistas, sin perder confianza, todo correcto
@@ -2448,7 +2396,6 @@ function getPerformanceTier(misCount, attCount) {
   return { emoji: "🔄", title: "No apto por el momento", message: "El número de diagnósticos erróneos es alto en proporción a los casos atendidos. Se recomienda regresar al curso introductorio de RDoC para reforzar las bases antes de continuar.", action: "course" };
 }
 
-function competencyPct(obj) { return obj.total > 0 ? Math.round((obj.correct / obj.total) * 100) : null; }
 
 const REVIEW_FIELDS = [
   { tag: "VEREDICTO", label: "Veredicto del revisor", icon: "⚖️", accent: "yellow" },
