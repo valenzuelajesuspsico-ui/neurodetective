@@ -46,6 +46,31 @@ src/logic.test.js              pruebas de la lógica pura (Vitest)
 src/index.css                  Tailwind, estilos base y animaciones
 ```
 
+## PWA (instalable en móvil y escritorio)
+
+La app es una **Progressive Web App**: se puede compartir con un enlace y
+**instalar** desde el navegador ("Agregar a la pantalla de inicio" en móvil,
+o el icono de instalar en la barra de direcciones en escritorio). Funciona
+**offline** tras la primera visita (service worker) y **guarda el progreso**
+de forma estable. El `manifest` y el service worker se generan en el `build`
+con `vite-plugin-pwa`; los iconos están en `public/`.
+
+## Despliegue en GitHub Pages
+
+El repo incluye un workflow (`.github/workflows/deploy.yml`) que compila,
+corre las pruebas y publica en GitHub Pages en cada push a `main`.
+
+**Paso único inicial:** en el repositorio, ve a *Settings → Pages* y en
+*Source* elige **GitHub Actions**. A partir de ahí, cada push a `main`
+publica la app en:
+
+```
+https://valenzuelajesuspsico-ui.github.io/neurodetective/
+```
+
+La ruta base (`/neurodetective/`) se configura en `vite.config.js`; si usas
+un dominio propio, lánzalo con `BASE_PATH=/ npm run build`.
+
 ## Modo Experto (opcional)
 
 El "Modo Experto" consulta la API de Anthropic **desde el navegador**, por lo
