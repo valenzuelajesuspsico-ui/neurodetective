@@ -41,6 +41,19 @@ const NO_MOTION = typeof window !== "undefined" && window.matchMedia
 
 const vibrate = (pattern) => { try { if (navigator.vibrate) navigator.vibrate(pattern); } catch { /* no-op */ } };
 
+// Almacenamiento local seguro (no rompe si localStorage no está disponible)
+const storage = {
+  get(k, fallback) { try { const v = localStorage.getItem(k); return v === null ? fallback : v; } catch { return fallback; } },
+  set(k, v) { try { localStorage.setItem(k, v); } catch { /* no-op */ } },
+};
+
+// Modo Experto: llamada directa a la API de Anthropic (requiere API key del usuario).
+const ANTHROPIC_API = "https://api.anthropic.com/v1/messages";
+const EXPERT_MODEL = "claude-sonnet-5";
+const KEY_STORAGE = "nd_anthropic_key";
+const SOUND_STORAGE = "nd_sound_on";
+const BESTSCORE_STORAGE = "nd_best_score";
+
 // Revela un texto letra por letra (respeta prefers-reduced-motion).
 function Typewriter({ text, speed = 16 }) {
   const [n, setN] = useState(NO_MOTION ? text.length : 0);
@@ -2322,14 +2335,6 @@ const LEVEL_UP_PHRASES = {
   2: "🎓 ¡Síntesis resuelta! El Instituto Nacional de Neurología y Neurocirugía Manuel Velasco Suárez ya te anda buscando para una plaza.",
 };
 const TRUST_LOST_PHRASE = "💔 La familia ha perdido la confianza en el diagnóstico — este caso quedará registrado como mal pronóstico.";
-const REPORT_TEMPLATES = {
-  "sindrome": ["Tras la evaluación neuropsicológica, se concluye que el paciente presenta un cuadro compatible con ", "{sindrome}", "."],
-  "sindrome,dominio": ["Tras la evaluación neuropsicológica, se concluye que el paciente presenta un cuadro compatible con ", "{sindrome}", ", el cual se ubica dentro del dominio RDoC de ", "{dominio}", "."],
-  "sindrome,dominio,constructo,unidad": ["Tras la evaluación neuropsicológica, se concluye que el paciente presenta un cuadro compatible con ", "{sindrome}", ", ubicado en el dominio RDoC de ", "{dominio}", ". Específicamente, se ve alterado el constructo de ", "{constructo}", ", evidenciado a través de la unidad de análisis de ", "{unidad}", "."],
-  "sindrome,instrumento": ["Tras la evaluación neuropsicológica, se concluye que el paciente presenta un cuadro compatible con ", "{sindrome}", ". Se recomienda fundamentar este perfil mediante ", "{instrumento}", "."],
-  "sindrome,dominio,instrumento": ["Tras la evaluación neuropsicológica, se concluye que el paciente presenta un cuadro compatible con ", "{sindrome}", ", el cual se ubica dentro del dominio RDoC de ", "{dominio}", ". Se recomienda fundamentar este perfil mediante ", "{instrumento}", "."],
-  "sindrome,dominio,constructo,unidad,instrumento": ["Tras la evaluación neuropsicológica, se concluye que el paciente presenta un cuadro compatible con ", "{sindrome}", ", ubicado en el dominio RDoC de ", "{dominio}", ". Específicamente, se ve alterado el constructo de ", "{constructo}", ", evidenciado a través de la unidad de análisis de ", "{unidad}", ". Para fundamentar este perfil se recomienda ", "{instrumento}", "."],
-};
 function buildReportData(caseObj) {
   const order = ["sindrome", "dominio", "constructo", "unidad", "instrumento"];
   const present = order.map(t => caseObj.questions.find(q => q.type === t)).filter(Boolean);
@@ -2629,12 +2634,15 @@ export default function NeuroDetectiveRDoC() {
   const [screen, setScreen] = useState("start");
 
   // --- efectos de experiencia: sonido + puntos flotantes ---
-  const [soundOn, setSoundOn] = useState(false);
+  const [soundOn, setSoundOn] = useState(() => storage.get(SOUND_STORAGE, "0") === "1");
   const [pointsFx, setPointsFx] = useState(null); // { amount, id }
+  const [bestScore, setBestScore] = useState(() => Number(storage.get(BESTSCORE_STORAGE, "0")) || 0);
+  useEffect(() => { SFX.setEnabled(soundOn); }, [soundOn]);
   function toggleSound() {
     setSoundOn(prev => {
       const next = !prev;
       SFX.setEnabled(next);
+      storage.set(SOUND_STORAGE, next ? "1" : "0");
       if (next) SFX.click();
       return next;
     });
@@ -2652,6 +2660,9 @@ export default function NeuroDetectiveRDoC() {
   const [caseIndex, setCaseIndex] = useState(0);
   const [questionIndex, setQuestionIndex] = useState(0);
   const [score, setScore] = useState(0);
+  useEffect(() => {
+    if (score > bestScore) { setBestScore(score); storage.set(BESTSCORE_STORAGE, String(score)); }
+  }, [score, bestScore]);
   const [streak, setStreak] = useState(0);
   const [selected, setSelected] = useState(null);
   const [showFeedback, setShowFeedback] = useState(false);
@@ -2721,7 +2732,31 @@ export default function NeuroDetectiveRDoC() {
   const [expertInput, setExpertInput] = useState("");
   const [expertError, setExpertError] = useState(null);
   const [expertStarted, setExpertStarted] = useState(false);
-  const expertBottomRef = useState(null);
+  const [expertApiKey, setExpertApiKey] = useState(() => storage.get(KEY_STORAGE, ""));
+  function updateApiKey(v) { setExpertApiKey(v); storage.set(KEY_STORAGE, v); }
+
+  async function callAnthropic(body) {
+    if (!expertApiKey.trim()) throw new Error("NO_KEY");
+    const res = await fetch(ANTHROPIC_API, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-api-key": expertApiKey.trim(),
+        "anthropic-version": "2023-06-01",
+        "anthropic-dangerous-direct-browser-access": "true",
+      },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) throw new Error("HTTP_" + res.status);
+    const data = await res.json();
+    return data.content.filter(b => b.type === "text").map(b => b.text).join("\n");
+  }
+
+  function expertErrorFor(e) {
+    if (e && e.message === "NO_KEY") return "Necesitas configurar tu API key de Anthropic para usar este modo (se guarda solo en tu navegador).";
+    if (e && /HTTP_401/.test(e.message)) return "La API key no es válida (401). Revísala e intenta de nuevo.";
+    return "No se pudo completar el análisis. Revisa tu conexión, la API key o pega el texto del resumen directamente.";
+  }
 
   async function analyzeExpertCase() {
     if ((!expertDoi.trim() && !expertText.trim()) || !expertFormulation.trim()) return;
@@ -2733,26 +2768,20 @@ export default function NeuroDetectiveRDoC() {
       : `Texto del caso clínico:\n${expertText.trim()}`;
     const userContent = `${sourceBlock}\n\n--- MI FORMULACIÓN RDoC (la del colega) ---\n${expertFormulation.trim()}\n\nRevisa mi formulación como par: dime qué sostengo bien, dónde la evidencia del artículo no respalda del todo mi clasificación, y qué alternativas debería considerar. No me des la respuesta cerrada; cuestiona mi razonamiento.`;
     try {
-      const res = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model: "claude-sonnet-4-6",
-          max_tokens: 1000,
-          system: EXPERT_SYSTEM_PROMPT,
-          tools: [{ type: "web_search_20250305", name: "web_search" }],
-          messages: [{ role: "user", content: userContent }],
-        }),
+      const text = await callAnthropic({
+        model: EXPERT_MODEL,
+        max_tokens: 1000,
+        system: EXPERT_SYSTEM_PROMPT,
+        tools: [{ type: "web_search_20250305", name: "web_search" }],
+        messages: [{ role: "user", content: userContent }],
       });
-      const data = await res.json();
-      const text = data.content.filter(b => b.type === "text").map(b => b.text).join("\n");
       setExpertMessages([
         { role: "user", content: userContent },
         { role: "assistant", content: text },
       ]);
       setExpertStarted(true);
-    } catch {
-      setExpertError("No se pudo analizar el artículo. Verifica el DOI o pega el texto del resumen directamente.");
+    } catch (e) {
+      setExpertError(expertErrorFor(e));
     } finally {
       setExpertLoading(false);
     }
@@ -2766,21 +2795,15 @@ export default function NeuroDetectiveRDoC() {
     setExpertInput("");
     setExpertLoading(true);
     try {
-      const res = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model: "claude-sonnet-4-6",
-          max_tokens: 1000,
-          system: EXPERT_SYSTEM_PROMPT,
-          messages: updated,
-        }),
+      const text = await callAnthropic({
+        model: EXPERT_MODEL,
+        max_tokens: 1000,
+        system: EXPERT_SYSTEM_PROMPT,
+        messages: updated,
       });
-      const data = await res.json();
-      const text = data.content.filter(b => b.type === "text").map(b => b.text).join("\n");
       setExpertMessages([...updated, { role: "assistant", content: text }]);
-    } catch {
-      setExpertError("Error al procesar tu pregunta. Intenta de nuevo.");
+    } catch (e) {
+      setExpertError(expertErrorFor(e));
     } finally {
       setExpertLoading(false);
     }
@@ -3087,7 +3110,7 @@ export default function NeuroDetectiveRDoC() {
               <h1 className="text-2xl font-bold text-white">Neuro Detective</h1>
               <p className="text-cyan-400 text-sm font-medium">Edición RDoC</p>
             </div>
-            <button onClick={toggleSound} title={soundOn ? "Silenciar" : "Activar sonido"} className="ml-auto text-slate-400 hover:text-cyan-300 bg-slate-800/60 rounded-lg p-2">
+            <button onClick={toggleSound} aria-label={soundOn ? "Silenciar sonido" : "Activar sonido"} title={soundOn ? "Silenciar" : "Activar sonido"} className="ml-auto text-slate-400 hover:text-cyan-300 bg-slate-800/60 rounded-lg p-2">
               {soundOn ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
             </button>
           </div>
@@ -3795,6 +3818,20 @@ export default function NeuroDetectiveRDoC() {
                   />
                 </div>
 
+                <div>
+                  <label className="text-xs font-bold text-yellow-300 uppercase tracking-wide">API key de Anthropic (se guarda solo en tu navegador)</label>
+                  <input
+                    type="password"
+                    value={expertApiKey}
+                    onChange={e => updateApiKey(e.target.value)}
+                    placeholder="sk-ant-..."
+                    className="mt-1.5 w-full bg-slate-800/60 border border-slate-700 rounded-xl px-4 py-3 text-slate-100 text-sm placeholder-slate-600 focus:outline-none focus:border-yellow-500/50"
+                  />
+                  <p className="text-slate-600 text-[11px] mt-1 leading-relaxed">
+                    Este modo consulta la API de Anthropic desde tu navegador, así que necesita tu propia clave. Se almacena localmente (localStorage) y nunca se envía a ningún otro sitio. Obtén una en console.anthropic.com.
+                  </p>
+                </div>
+
                 {expertError && (
                   <div className="bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-3 text-red-300 text-sm">
                     {expertError}
@@ -3993,7 +4030,11 @@ export default function NeuroDetectiveRDoC() {
               <FolderOpen className="w-3.5 h-3.5" /> Sala de Expedientes
             </span>
             <div className="flex items-center gap-3 text-sm">
+              {bestScore > 0 && <span className="text-slate-400 text-xs" title="Mejor puntaje guardado">🏅 Récord: {bestScore}</span>}
               <span className="flex items-center gap-1 text-amber-400 font-bold"><Sparkles className="w-4 h-4" /> {score} pts</span>
+              <button onClick={toggleSound} aria-label={soundOn ? "Silenciar sonido" : "Activar sonido"} className="text-slate-500 hover:text-slate-300">
+                {soundOn ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+              </button>
               <button onClick={goHome} className="text-slate-500 hover:text-slate-300 flex items-center gap-1 text-xs"><Home className="w-3.5 h-3.5" /> Inicio</button>
             </div>
           </div>
@@ -4395,7 +4436,7 @@ export default function NeuroDetectiveRDoC() {
             </span>
             <div className="flex items-center gap-3 text-sm">
               <span className="text-slate-400">+{SYNTHESIS_BONUS} pts si aciertas</span>
-              <button onClick={goLobby} className="text-slate-500 hover:text-slate-300 flex items-center gap-1 text-xs"><X className="w-3.5 h-3.5" /></button>
+              <button onClick={goLobby} aria-label="Salir al lobby" className="text-slate-500 hover:text-slate-300 flex items-center gap-1 text-xs"><X className="w-3.5 h-3.5" /></button>
             </div>
           </div>
 
@@ -4452,7 +4493,7 @@ export default function NeuroDetectiveRDoC() {
             </span>
             <div className="flex items-center gap-3 text-sm">
               <span className="flex items-center gap-1 text-amber-400 font-bold"><Sparkles className="w-4 h-4" /> {score} pts</span>
-              <button onClick={goLobby} className="text-slate-500 hover:text-slate-300 flex items-center gap-1 text-xs"><X className="w-3.5 h-3.5" /></button>
+              <button onClick={goLobby} aria-label="Salir al lobby" className="text-slate-500 hover:text-slate-300 flex items-center gap-1 text-xs"><X className="w-3.5 h-3.5" /></button>
             </div>
           </div>
 
@@ -4522,7 +4563,7 @@ export default function NeuroDetectiveRDoC() {
             </span>
             <div className="flex items-center gap-3 text-sm">
               <span className="flex items-center gap-1 text-amber-400 font-bold"><Sparkles className="w-4 h-4" /> {score} pts</span>
-              <button onClick={goLobby} className="text-slate-500 hover:text-slate-300 flex items-center gap-1 text-xs"><X className="w-3.5 h-3.5" /></button>
+              <button onClick={goLobby} aria-label="Salir al lobby" className="text-slate-500 hover:text-slate-300 flex items-center gap-1 text-xs"><X className="w-3.5 h-3.5" /></button>
             </div>
           </div>
 
@@ -4649,7 +4690,7 @@ export default function NeuroDetectiveRDoC() {
             </span>
             <div className="flex items-center gap-3 text-sm">
               <span className="flex items-center gap-1 text-amber-400 font-bold"><Sparkles className="w-4 h-4" /> {score} pts</span>
-              <button onClick={goLobby} className="text-slate-500 hover:text-slate-300 flex items-center gap-1 text-xs"><X className="w-3.5 h-3.5" /></button>
+              <button onClick={goLobby} aria-label="Salir al lobby" className="text-slate-500 hover:text-slate-300 flex items-center gap-1 text-xs"><X className="w-3.5 h-3.5" /></button>
             </div>
           </div>
 
@@ -4687,6 +4728,7 @@ export default function NeuroDetectiveRDoC() {
               {pointsFx && (
                 <span
                   key={pointsFx.id}
+                  aria-hidden="true"
                   onAnimationEnd={() => setPointsFx(null)}
                   className="nd-float pointer-events-none absolute -top-4 right-0 text-emerald-400 font-bold text-sm"
                 >
@@ -4699,10 +4741,10 @@ export default function NeuroDetectiveRDoC() {
                 <Flame key={streak} className={`w-4 h-4 ${streak >= 3 ? "nd-flame" : ""}`} /> {streak}{streak >= 3 ? " ×1.5" : ""}
               </span>
             )}
-            <button onClick={toggleSound} title={soundOn ? "Silenciar" : "Activar sonido"} className="text-slate-500 hover:text-slate-300">
+            <button onClick={toggleSound} aria-label={soundOn ? "Silenciar sonido" : "Activar sonido"} title={soundOn ? "Silenciar" : "Activar sonido"} className="text-slate-500 hover:text-slate-300">
               {soundOn ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
             </button>
-            <button onClick={goLobby} className="text-slate-500 hover:text-slate-300 flex items-center gap-1 text-xs"><X className="w-3.5 h-3.5" /></button>
+            <button onClick={goLobby} aria-label="Salir al lobby" className="text-slate-500 hover:text-slate-300 flex items-center gap-1 text-xs"><X className="w-3.5 h-3.5" /></button>
           </div>
         </div>
 
@@ -4787,7 +4829,7 @@ export default function NeuroDetectiveRDoC() {
           </div>
 
           {showFeedback && (
-            <div className={`mt-4 p-4 rounded-xl border ${selectedOption.correct ? "border-emerald-500/40 bg-emerald-500/10 nd-correct" : "border-red-500/40 bg-red-500/10 nd-shake"}`}>
+            <div role="status" aria-live="polite" className={`mt-4 p-4 rounded-xl border ${selectedOption.correct ? "border-emerald-500/40 bg-emerald-500/10 nd-correct" : "border-red-500/40 bg-red-500/10 nd-shake"}`}>
               <p className={`text-sm font-semibold mb-1 ${selectedOption.correct ? "text-emerald-300" : "text-red-300"}`}>{selectedOption.correct ? "¡Correcto!" : "No del todo..."}</p>
               <p className="text-slate-300 text-sm leading-relaxed">{selectedOption.feedback}</p>
 
