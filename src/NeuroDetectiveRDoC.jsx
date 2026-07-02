@@ -67,6 +67,12 @@ const KEY_STORAGE = "nd_anthropic_key";
 const SOUND_STORAGE = "nd_sound_on";
 const BESTSCORE_STORAGE = "nd_best_score";
 
+// Canal de retroalimentación (issue prellenado en GitHub) para que especialistas reporten casos discutibles.
+const FEEDBACK_URL = "https://github.com/valenzuelajesuspsico-ui/neurodetective/issues/new?title=" +
+  encodeURIComponent("Caso discutible / sugerencia de contenido") +
+  "&body=" +
+  encodeURIComponent("Caso o pantalla:\n\nRespuesta marcada como correcta:\n\nRespuesta que yo defendería (y por qué):\n\nInstrumento/constructo que ajustaría:\n\n— Gracias por tu revisión.");
+
 
 
 
@@ -772,10 +778,59 @@ export default function NeuroDetectiveRDoC() {
             <p className="text-slate-500 text-[11px] leading-relaxed">
               Herramienta educativa de práctica para estudiantes y profesionales de neuropsicología. No sustituye la formación clínica supervisada ni los instrumentos oficiales de evaluación — todos los casos son ficticios y de uso didáctico.
             </p>
+            <div className="mt-2 flex items-center justify-center gap-3 flex-wrap">
+              <button onClick={() => setScreen("about")} className="text-cyan-400/90 hover:text-cyan-300 text-[11px] underline underline-offset-2">
+                Alcance y limitaciones
+              </button>
+              <span className="text-slate-700">·</span>
+              <a href={FEEDBACK_URL} target="_blank" rel="noopener noreferrer" className="text-cyan-400/90 hover:text-cyan-300 text-[11px] underline underline-offset-2">
+                Reportar un caso discutible
+              </a>
+            </div>
             <p className="text-slate-600 text-[11px] mt-1.5 italic">
               Elaborado por Jesús Valenzuela
             </p>
           </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (screen === "about") {
+    const puntos = [
+      { t: "Es una herramienta educativa, no diagnóstica", d: "Sirve para practicar el razonamiento clínico con el marco RDoC. No sustituye la evaluación con instrumentos validados ni el juicio clínico supervisado." },
+      { t: "Los casos son ficticios y simplificados", d: "Cada expediente aísla un mecanismo para hacerlo didáctico; la clínica real es más ambigua, comórbida y probabilística." },
+      { t: "Formato de respuesta única", d: "Se elige la opción más defensible para fines de enseñanza. Puede haber casos con más de una lectura razonable — si detectas uno, repórtalo." },
+      { t: "RDoC es un marco de investigación", d: "Complementa, no reemplaza, a los sistemas diagnósticos (DSM/CIE). El objetivo es practicar el pensamiento dimensional y mecanístico." },
+      { t: "Contenido aún no validado por consenso", d: "El material fue curado con apoyo de fuentes actuales (ver Referencias en el curso), pero no ha pasado revisión por pares ni validación psicométrica." },
+      { t: "Privacidad", d: "No se recopilan datos: el progreso se guarda solo en tu dispositivo (localStorage) y nada se envía a ningún servidor." },
+    ];
+    return (
+      <div className="min-h-screen w-full nd-screen-in bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-900 flex items-center justify-center p-6">
+        <div className="nd-card-in max-w-xl w-full bg-slate-900/60 border border-indigo-500/30 rounded-2xl p-8 shadow-2xl backdrop-blur">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-bold text-white flex items-center gap-2"><ClipboardList className="w-5 h-5 text-cyan-400" /> Alcance y limitaciones</h2>
+            <button onClick={goHome} aria-label="Volver al inicio" className="text-slate-500 hover:text-slate-300 flex items-center gap-1 text-xs"><X className="w-3.5 h-3.5" /></button>
+          </div>
+          <p className="text-slate-400 text-xs mb-4 leading-relaxed">Transparencia sobre qué es —y qué no es— este recurso. Léelo antes de usarlo con fines formativos.</p>
+          <div className="space-y-2.5">
+            {puntos.map((p, i) => (
+              <div key={i} className="bg-slate-800/50 rounded-lg px-3 py-2.5">
+                <p className="text-cyan-200 font-bold text-xs">{p.t}</p>
+                <p className="text-slate-400 text-[11px] mt-0.5 leading-relaxed">{p.d}</p>
+              </div>
+            ))}
+          </div>
+          <div className="mt-4 bg-cyan-500/10 border border-cyan-500/30 rounded-xl p-4">
+            <p className="text-cyan-200 text-xs font-bold mb-1">¿Eres especialista? Tu mirada mejora esto</p>
+            <p className="text-slate-300 text-[11px] leading-relaxed mb-3">Si defiendes otra respuesta en algún caso, o cambiarías un instrumento o constructo, cuéntamelo — se integrará a la siguiente versión.</p>
+            <a href={FEEDBACK_URL} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 bg-cyan-500 hover:bg-cyan-400 active:scale-[0.98] transition-all text-slate-900 font-bold py-2 px-4 rounded-lg text-sm">
+              Reportar un caso discutible <ChevronRight className="w-4 h-4" />
+            </a>
+          </div>
+          <button onClick={goHome} className="mt-5 w-full bg-slate-800 hover:bg-slate-700 transition-all text-slate-300 font-medium py-2.5 rounded-xl text-sm">
+            Volver al inicio
+          </button>
         </div>
       </div>
     );
